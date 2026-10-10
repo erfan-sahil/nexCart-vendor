@@ -7,7 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider.tsx"
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ThemeProvider>
+    <ThemeProvider storageKey="nexcart-vendor-theme">
       <App />
     </ThemeProvider>
   </StrictMode>
