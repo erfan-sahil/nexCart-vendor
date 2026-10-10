@@ -1,5 +1,5 @@
 import { PagePlaceholder } from "@/components/layout/page-placeholder"
 
-export function SettingsPage() {
+export function AnalyticsPage() {
   return <PagePlaceholder />
 }

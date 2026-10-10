@@ -11,29 +11,53 @@ import {
   type PageHandle,
   type VendorPath,
 } from "@/lib/navigation"
-import { InventoryPage } from "@/pages/catalog/inventory/page"
-import { ProductsPage } from "@/pages/catalog/products/page"
-import { OrdersPage } from "@/pages/commerce/orders/page"
-import { ReturnsPage } from "@/pages/commerce/returns/page"
 import { DashboardPage } from "@/pages/dashboard/page"
 import { EarningsPage } from "@/pages/finance/earnings/page"
-import { PayoutsPage } from "@/pages/finance/payouts/page"
+import { TransactionsPage } from "@/pages/finance/transactions/page"
+import { WithdrawalsPage } from "@/pages/finance/withdrawals/page"
+import { AnalyticsPage } from "@/pages/growth/analytics/page"
+import { SubscriptionPlansPage } from "@/pages/growth/subscription-plans/page"
+import { CouponsPage } from "@/pages/marketing/coupons/page"
+import { DiscountsPage } from "@/pages/marketing/discounts/page"
+import { FlashDealsPage } from "@/pages/marketing/flash-deals/page"
+import { SponsoredAdsPage } from "@/pages/marketing/sponsored-ads/page"
 import { NotFoundPage } from "@/pages/not-found/page"
-import { ProfilePage } from "@/pages/store/profile/page"
-import { SettingsPage } from "@/pages/store/settings/page"
-import { SupportPage } from "@/pages/support/page"
+import { AllOrdersPage } from "@/pages/orders/all/page"
+import { ProcessingPage } from "@/pages/orders/processing/page"
+import { ReturnsPage } from "@/pages/orders/returns/page"
+import { ShippedPage } from "@/pages/orders/shipped/page"
+import { BusinessProfilePage } from "@/pages/settings/business-profile/page"
+import { PayoutDetailsPage } from "@/pages/settings/payout-details/page"
+import { SecurityPage } from "@/pages/settings/security/page"
+import { ShippingReturnsPage } from "@/pages/settings/shipping-returns/page"
+import { InventoryPage } from "@/pages/store/inventory/page"
+import { ProductsPage } from "@/pages/store/products/page"
+import { StoreProfilePage } from "@/pages/store/profile/page"
+import { ReviewsPage } from "@/pages/store/reviews/page"
 
 const pages: Record<VendorPath, ComponentType> = {
   "/": DashboardPage,
-  "/catalog/products": ProductsPage,
-  "/catalog/inventory": InventoryPage,
-  "/commerce/orders": OrdersPage,
-  "/commerce/returns": ReturnsPage,
+  "/store/profile": StoreProfilePage,
+  "/store/products": ProductsPage,
+  "/store/inventory": InventoryPage,
+  "/store/reviews": ReviewsPage,
+  "/orders/all": AllOrdersPage,
+  "/orders/processing": ProcessingPage,
+  "/orders/shipped": ShippedPage,
+  "/orders/returns": ReturnsPage,
+  "/marketing/discounts": DiscountsPage,
+  "/marketing/coupons": CouponsPage,
+  "/marketing/flash-deals": FlashDealsPage,
+  "/marketing/sponsored-ads": SponsoredAdsPage,
   "/finance/earnings": EarningsPage,
-  "/finance/payouts": PayoutsPage,
-  "/store/profile": ProfilePage,
-  "/store/settings": SettingsPage,
-  "/support": SupportPage,
+  "/finance/transactions": TransactionsPage,
+  "/finance/withdrawals": WithdrawalsPage,
+  "/growth/analytics": AnalyticsPage,
+  "/growth/subscription-plans": SubscriptionPlansPage,
+  "/settings/business-profile": BusinessProfilePage,
+  "/settings/shipping-returns": ShippingReturnsPage,
+  "/settings/payout-details": PayoutDetailsPage,
+  "/settings/security": SecurityPage,
 }
 
 function handleFor(page: NavPage): PageHandle {
