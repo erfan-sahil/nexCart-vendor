@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react"
 import { Outlet } from "react-router"
 
-import { VendorHeader } from "@/components/layout/vendor-header"
-import { VendorSidebar } from "@/components/layout/vendor-sidebar"
+import { VendorHeader } from "./vendor-header"
+import { VendorSidebar } from "./vendor-sidebar"
 
 export function VendorShell() {
   const [collapsed, setCollapsed] = useState(false)

@@ -1,4 +1,4 @@
-import { ORDERS, SALES, STATS, STOCK } from "@/lib/dashboard"
+import { ORDERS, SALES, STATS, STOCK } from "../data/dashboard"
 
 const STATUS_CLASS = {
   Paid: "bg-brand-soft text-brand-text",

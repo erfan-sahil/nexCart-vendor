@@ -1,9 +1,9 @@
 import { useState } from "react"
+import { ChevronRight, X } from "lucide-react"
 import { NavLink, useLocation } from "react-router"
 
+import { isNavGroup, NAV, type NavPage } from "@/app/navigation"
 import { cn } from "@/lib/utils"
-import { isNavGroup, NAV, type NavPage } from "@/lib/navigation"
-import { ChevronRight, X } from "lucide-react"
 
 type VendorSidebarProps = {
   collapsed: boolean

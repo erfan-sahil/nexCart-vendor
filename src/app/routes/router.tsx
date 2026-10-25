@@ -1,7 +1,6 @@
 import { createElement, type ComponentType } from "react"
 import { createBrowserRouter, Navigate, type RouteObject } from "react-router"
 
-import { VendorShell } from "@/components/layout/vendor-shell"
 import {
   groupBase,
   isNavGroup,
@@ -10,7 +9,8 @@ import {
   type NavPage,
   type PageHandle,
   type VendorPath,
-} from "@/lib/navigation"
+} from "@/app/navigation"
+import { VendorShell } from "@/components/layout"
 import { DashboardPage } from "@/pages/dashboard/page"
 import { EarningsPage } from "@/pages/finance/earnings/page"
 import { TransactionsPage } from "@/pages/finance/transactions/page"
