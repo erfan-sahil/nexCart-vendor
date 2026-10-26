@@ -11,8 +11,10 @@ import {
   type VendorPath,
 } from "@/app/navigation"
 import { VendorShell } from "@/components/layout"
+import { RequireVendor } from "@/features/auth/components"
 import { DashboardPage } from "@/pages/dashboard/page"
 import { EarningsPage } from "@/pages/finance/earnings/page"
+import { LoginPage } from "@/pages/login/page"
 import { TransactionsPage } from "@/pages/finance/transactions/page"
 import { WithdrawalsPage } from "@/pages/finance/withdrawals/page"
 import { AnalyticsPage } from "@/pages/growth/analytics/page"
@@ -96,17 +98,26 @@ const childRoutes: RouteObject[] = NAV.map((entry) => {
 
 export const router = createBrowserRouter([
   {
-    path: "/",
-    element: <VendorShell />,
+    path: "/login",
+    element: <LoginPage />,
+  },
+  {
+    element: <RequireVendor />,
     children: [
-      ...childRoutes,
       {
-        path: "*",
-        element: <NotFoundPage />,
-        handle: {
-          title: "Not found",
-          description: "This page is not in the vendor dashboard.",
-        } satisfies PageHandle,
+        path: "/",
+        element: <VendorShell />,
+        children: [
+          ...childRoutes,
+          {
+            path: "*",
+            element: <NotFoundPage />,
+            handle: {
+              title: "Not found",
+              description: "This page is not in the vendor dashboard.",
+            } satisfies PageHandle,
+          },
+        ],
       },
     ],
   },
