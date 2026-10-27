@@ -20,6 +20,17 @@ export const DEFAULT_PRODUCT_SORT = "-createdAt" as const
 
 export const DEFAULT_PRODUCT_PAGE_SIZE = 20
 
+export const MAX_PRODUCT_IMAGES = 8
+
+export const MAX_PRODUCT_IMAGE_BYTES = 5 * 1024 * 1024
+
+export const PRODUCT_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+] as const
+
 export const PRODUCT_STATUS_LABEL = {
   active: "Active",
   archived: "Archived",

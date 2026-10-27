@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { ChevronDown, Search, X } from "lucide-react"
+import { ChevronDown, Plus, Search, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -77,6 +77,7 @@ type ProductToolbarProps = {
   onPublished: (isPublished: boolean | undefined) => void
   onSort: (sort: ProductSort) => void
   onClear: () => void
+  onCreate: () => void
 }
 
 function isStatus(value: string): value is ProductStatus {
@@ -104,6 +105,7 @@ export function ProductToolbar({
   onPublished,
   onSort,
   onClear,
+  onCreate,
 }: ProductToolbarProps) {
   const querySearch = query.search ?? ""
   const [draft, setDraft] = useState<string | null>(null)
@@ -146,20 +148,26 @@ export function ProductToolbar({
             ? "Store products"
             : `${total} ${total === 1 ? "product" : "products"}`}
         </p>
-        {filtersActive ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setDraft("")
-              onClear()
-            }}
-          >
-            <X />
-            Clear filters
+        <div className="flex flex-wrap items-center gap-2">
+          {filtersActive ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setDraft("")
+                onClear()
+              }}
+            >
+              <X />
+              Clear filters
+            </Button>
+          ) : null}
+          <Button type="button" onClick={onCreate}>
+            <Plus />
+            Add product
           </Button>
-        ) : null}
+        </div>
       </div>
 
       <div className="flex flex-col gap-2 lg:flex-row lg:items-center">

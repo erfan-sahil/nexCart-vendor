@@ -1,8 +1,9 @@
-import { useCallback, useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 
+import { DEFAULT_PRODUCT_SORT } from "../constants"
 import { useProductListParams, useVendorProducts } from "../hooks"
 import { formatResultRange } from "../lib/format"
 import { hasProductFilters } from "../lib/product-query"
@@ -17,10 +18,12 @@ import {
   ProductErrorState,
   ProductTableSkeleton,
 } from "./product-states"
+import { ProductCreateDialog } from "./product-create-dialog"
 import { ProductTable } from "./product-table"
 import { ProductToolbar } from "./product-toolbar"
 
 export function ProductCatalog() {
+  const [createOpen, setCreateOpen] = useState(false)
   const { query, updateQuery, clearFilters } = useProductListParams()
   const products = useVendorProducts(query)
   const page = products.data
@@ -75,6 +78,7 @@ export function ProductCatalog() {
         onPublished={changePublished}
         onSort={changeSort}
         onClear={clearFilters}
+        onCreate={() => setCreateOpen(true)}
       />
 
       <div className="overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-sm">
@@ -148,6 +152,12 @@ export function ProductCatalog() {
           </footer>
         ) : null}
       </div>
+
+      <ProductCreateDialog
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        onCreated={() => updateQuery({ page: 1, sort: DEFAULT_PRODUCT_SORT })}
+      />
     </section>
   )
 }

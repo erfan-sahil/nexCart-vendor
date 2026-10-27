@@ -2,6 +2,7 @@ import { api } from "@/lib/api/client"
 import { ApiError, toApiError } from "@/lib/api/errors"
 import type { ApiSuccess, PaginationMeta } from "@/lib/api/types"
 
+import type { CreateProductPayload } from "../lib/create-product"
 import type { Product, ProductListQuery, ProductPage } from "../types"
 
 function toListParams(query: ProductListQuery) {
@@ -44,6 +45,40 @@ export async function listVendorProducts(
       items: data.data,
       pagination: readPagination(data.meta),
     }
+  } catch (error) {
+    throw toApiError(error)
+  }
+}
+
+export async function createProduct(
+  payload: CreateProductPayload,
+  images: File[]
+) {
+  const body = new FormData()
+  body.append("payload", JSON.stringify(payload))
+
+  for (const image of images) {
+    body.append("images", image, image.name)
+  }
+
+  try {
+    const { data } = await api.post<ApiSuccess<Product>>("/products", body, {
+      headers: { "Content-Type": "multipart/form-data" },
+      transformRequest: (form, headers) => {
+        if (
+          headers &&
+          typeof headers === "object" &&
+          "delete" in headers &&
+          typeof headers.delete === "function"
+        ) {
+          headers.delete("Content-Type")
+        }
+
+        return form
+      },
+    })
+
+    return data.data
   } catch (error) {
     throw toApiError(error)
   }
