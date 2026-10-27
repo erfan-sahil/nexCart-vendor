@@ -9,6 +9,7 @@ export {
   createVariant,
   deleteProduct,
   getProduct,
+  listProductVariants,
   listVendorProducts,
   submitProduct,
   updateProduct,

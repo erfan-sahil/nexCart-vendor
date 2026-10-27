@@ -6,7 +6,13 @@ import type {
   CreateProductPayload,
   UpdateProductPayload,
 } from "../lib/create-product"
-import type { Product, ProductListQuery, ProductPage } from "../types"
+import type {
+  Product,
+  ProductListQuery,
+  ProductPage,
+  ProductVariant,
+  ProductVariantPage,
+} from "../types"
 
 function toListParams(query: ProductListQuery) {
   return {
@@ -22,7 +28,7 @@ function toListParams(query: ProductListQuery) {
   }
 }
 
-function readPagination(meta: ApiSuccess<Product[]>["meta"]): PaginationMeta {
+function readPagination(meta: ApiSuccess<unknown>["meta"]): PaginationMeta {
   const pagination = meta?.pagination
 
   if (!pagination) {
@@ -161,6 +167,24 @@ export async function deleteProduct(productId: string) {
     )
 
     return data.data
+  } catch (error) {
+    throw toApiError(error)
+  }
+}
+
+export async function listProductVariants(
+  productId: string
+): Promise<ProductVariantPage> {
+  try {
+    const { data } = await api.get<ApiSuccess<ProductVariant[]>>(
+      `/products/${productId}/variants`,
+      { params: { page: 1, limit: 100, sort: "sku" } }
+    )
+
+    return {
+      items: data.data,
+      pagination: readPagination(data.meta),
+    }
   } catch (error) {
     throw toApiError(error)
   }

@@ -1,6 +1,11 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query"
 
-import { getProduct, listVendorProducts, productKeys } from "../services"
+import {
+  getProduct,
+  listProductVariants,
+  listVendorProducts,
+  productKeys,
+} from "../services"
 import type { ProductListQuery } from "../types"
 
 export function useVendorProducts(query: ProductListQuery) {
@@ -17,5 +22,14 @@ export function useProduct(productId: string) {
     queryKey: productKeys.detail(productId),
     queryFn: () => getProduct(productId),
     enabled: productId.length > 0,
+  })
+}
+
+export function useProductVariants(productId: string, enabled: boolean) {
+  return useQuery({
+    queryKey: productKeys.variants(productId),
+    queryFn: () => listProductVariants(productId),
+    enabled: enabled && productId.length > 0,
+    staleTime: 30_000,
   })
 }

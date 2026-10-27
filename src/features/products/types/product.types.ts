@@ -62,6 +62,28 @@ export type ProductOffer = {
   defaultVariantId: string | null
 }
 
+export type ProductVariant = {
+  id: string
+  productId: string
+  sku: string
+  price: number
+  discountType: "percent" | "amount" | null
+  discountValue: number | null
+  currentPrice: number
+  stock: number
+  image: ProductImage | null
+  attributes: ProductAttribute[]
+  status: "active" | "archived"
+  isDefault: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export type ProductVariantPage = {
+  items: ProductVariant[]
+  pagination: PaginationMeta
+}
+
 export type Product = {
   id: string
   storeId: string
