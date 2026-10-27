@@ -1,10 +1,22 @@
-import { useEffect, useId, useState, type ReactNode } from "react"
-import { Search, X } from "lucide-react"
+import { useEffect, useState } from "react"
+import { ChevronDown, Search, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { cn } from "@/lib/utils"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group"
 
 import {
   PRODUCT_APPROVAL_LABEL,
@@ -22,8 +34,39 @@ import type {
   ProductStatus,
 } from "../types"
 
-const controlClass =
-  "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+const ALL = "all"
+
+type FilterOption = {
+  value: string
+  label: string
+}
+
+const STATUS_OPTIONS: FilterOption[] = [
+  { value: ALL, label: "All statuses" },
+  ...PRODUCT_STATUSES.map((status) => ({
+    value: status,
+    label: PRODUCT_STATUS_LABEL[status],
+  })),
+]
+
+const APPROVAL_OPTIONS: FilterOption[] = [
+  { value: ALL, label: "All approvals" },
+  ...PRODUCT_APPROVAL_STATUSES.map((status) => ({
+    value: status,
+    label: PRODUCT_APPROVAL_LABEL[status],
+  })),
+]
+
+const VISIBILITY_OPTIONS: FilterOption[] = [
+  { value: ALL, label: "All visibility" },
+  { value: "true", label: "Published" },
+  { value: "false", label: "Unpublished" },
+]
+
+const SORT_OPTIONS: FilterOption[] = PRODUCT_SORTS.map((sort) => ({
+  value: sort,
+  label: PRODUCT_SORT_LABEL[sort],
+}))
 
 type ProductToolbarProps = {
   query: ProductListQuery
@@ -48,6 +91,10 @@ function isSort(value: string): value is ProductSort {
   return (PRODUCT_SORTS as readonly string[]).includes(value)
 }
 
+function optionLabel(options: FilterOption[], value: string) {
+  return options.find((option) => option.value === value)?.label ?? "All"
+}
+
 export function ProductToolbar({
   query,
   total,
@@ -58,11 +105,6 @@ export function ProductToolbar({
   onSort,
   onClear,
 }: ProductToolbarProps) {
-  const searchId = useId()
-  const statusId = useId()
-  const approvalId = useId()
-  const publishedId = useId()
-  const sortId = useId()
   const querySearch = query.search ?? ""
   const [draft, setDraft] = useState<string | null>(null)
   const [trackedSearch, setTrackedSearch] = useState(querySearch)
@@ -93,9 +135,12 @@ export function ProductToolbar({
     return () => window.clearTimeout(timeout)
   }, [onSearch, querySearch, search])
 
+  const publishedValue =
+    query.isPublished === undefined ? ALL : String(query.isPublished)
+
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 text-card-foreground shadow-sm">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
           {total === undefined
             ? "Store products"
@@ -117,127 +162,113 @@ export function ProductToolbar({
         ) : null}
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <div className="flex flex-col gap-1.5 sm:col-span-2 xl:col-span-1">
-          <Label htmlFor={searchId} className="text-xs text-muted-foreground">
-            Search
-          </Label>
-          <div className="relative">
-            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              id={searchId}
-              value={search}
-              placeholder="Name or description"
-              className="pl-8"
-              onChange={(event) => setDraft(event.target.value)}
-            />
-          </div>
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+        <InputGroup className="lg:max-w-sm lg:flex-1">
+          <InputGroupAddon>
+            <Search />
+          </InputGroupAddon>
+          <InputGroupInput
+            value={search}
+            placeholder="Search products"
+            aria-label="Search products"
+            onChange={(event) => setDraft(event.target.value)}
+          />
+          {search ? (
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton
+                size="icon-xs"
+                aria-label="Clear search"
+                onClick={() => {
+                  setDraft("")
+                  onSearch(undefined)
+                }}
+              >
+                <X />
+              </InputGroupButton>
+            </InputGroupAddon>
+          ) : null}
+        </InputGroup>
+
+        <div className="flex flex-wrap gap-2">
+          <FilterMenu
+            label="Status"
+            value={query.status ?? ALL}
+            options={STATUS_OPTIONS}
+            onChange={(value) => onStatus(isStatus(value) ? value : undefined)}
+          />
+          <FilterMenu
+            label="Approval"
+            value={query.approvalStatus ?? ALL}
+            options={APPROVAL_OPTIONS}
+            onChange={(value) =>
+              onApprovalStatus(isApprovalStatus(value) ? value : undefined)
+            }
+          />
+          <FilterMenu
+            label="Visibility"
+            value={publishedValue}
+            options={VISIBILITY_OPTIONS}
+            onChange={(value) => {
+              if (value === "true") {
+                onPublished(true)
+                return
+              }
+
+              if (value === "false") {
+                onPublished(false)
+                return
+              }
+
+              onPublished(undefined)
+            }}
+          />
+          <FilterMenu
+            label="Sort"
+            value={query.sort}
+            options={SORT_OPTIONS}
+            onChange={(value) => {
+              if (isSort(value)) {
+                onSort(value)
+              }
+            }}
+          />
         </div>
-
-        <FilterSelect
-          id={statusId}
-          label="Status"
-          value={query.status ?? ""}
-          onChange={(value) => onStatus(isStatus(value) ? value : undefined)}
-        >
-          <option value="">All statuses</option>
-          {PRODUCT_STATUSES.map((status) => (
-            <option key={status} value={status}>
-              {PRODUCT_STATUS_LABEL[status]}
-            </option>
-          ))}
-        </FilterSelect>
-
-        <FilterSelect
-          id={approvalId}
-          label="Approval"
-          value={query.approvalStatus ?? ""}
-          onChange={(value) =>
-            onApprovalStatus(isApprovalStatus(value) ? value : undefined)
-          }
-        >
-          <option value="">All approvals</option>
-          {PRODUCT_APPROVAL_STATUSES.map((status) => (
-            <option key={status} value={status}>
-              {PRODUCT_APPROVAL_LABEL[status]}
-            </option>
-          ))}
-        </FilterSelect>
-
-        <FilterSelect
-          id={publishedId}
-          label="Visibility"
-          value={
-            query.isPublished === undefined ? "" : String(query.isPublished)
-          }
-          onChange={(value) => {
-            if (value === "true") {
-              onPublished(true)
-              return
-            }
-
-            if (value === "false") {
-              onPublished(false)
-              return
-            }
-
-            onPublished(undefined)
-          }}
-        >
-          <option value="">All visibility</option>
-          <option value="true">Published</option>
-          <option value="false">Unpublished</option>
-        </FilterSelect>
-
-        <FilterSelect
-          id={sortId}
-          label="Sort"
-          value={query.sort}
-          onChange={(value) => {
-            if (isSort(value)) {
-              onSort(value)
-            }
-          }}
-        >
-          {PRODUCT_SORTS.map((sort) => (
-            <option key={sort} value={sort}>
-              {PRODUCT_SORT_LABEL[sort]}
-            </option>
-          ))}
-        </FilterSelect>
       </div>
     </div>
   )
 }
 
-type FilterSelectProps = {
-  id: string
-  label: string
-  value: string
-  onChange: (value: string) => void
-  children: ReactNode
-}
-
-function FilterSelect({
-  id,
+function FilterMenu({
   label,
   value,
+  options,
   onChange,
-  children,
-}: FilterSelectProps) {
+}: {
+  label: string
+  value: string
+  options: FilterOption[]
+  onChange: (value: string) => void
+}) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <Label htmlFor={id} className="text-xs text-muted-foreground">
-        {label}
-      </Label>
-      <select
-        id={id}
-        value={value}
-        className={cn(controlClass)}
-        onChange={(event) => onChange(event.target.value)}
-      >
-        {children}
-      </select>
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button type="button" variant="outline">
+          <span className="text-muted-foreground">{label}</span>
+          {optionLabel(options, value)}
+          <ChevronDown className="text-muted-foreground" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        <DropdownMenuLabel>{label}</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuRadioGroup value={value} onValueChange={onChange}>
+          {options.map((option) => (
+            <DropdownMenuRadioItem key={option.value} value={option.value}>
+              {option.label}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

@@ -1,7 +1,23 @@
-import { useState, type ReactNode } from "react"
+import { useState } from "react"
+import {
+  createColumnHelper,
+  tableFeatures,
+  useTable,
+} from "@tanstack/react-table"
 import { Package } from "lucide-react"
 
+import { Badge } from "@/components/ui/badge"
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { resolveAssetUrl } from "@/lib/api/assets"
+import { cn } from "@/lib/utils"
 
 import { PRODUCT_APPROVAL_LABEL, PRODUCT_STATUS_LABEL } from "../constants"
 import {
@@ -11,16 +27,46 @@ import {
 } from "../lib/format"
 import type { Product, ProductApprovalStatus, ProductStatus } from "../types"
 
-const STATUS_CLASS: Record<ProductStatus, string> = {
-  active: "bg-brand-soft text-brand-text",
-  archived: "bg-muted text-muted-foreground",
-}
+const features = tableFeatures({})
+const columnHelper = createColumnHelper<typeof features, Product>()
 
-const APPROVAL_CLASS: Record<ProductApprovalStatus, string> = {
-  pending: "bg-muted text-muted-foreground",
-  submitted: "bg-secondary text-secondary-foreground",
-  approved: "bg-brand-soft text-brand-text",
-  rejected: "bg-destructive/10 text-destructive",
+const columns = columnHelper.columns([
+  columnHelper.accessor("name", {
+    id: "product",
+    header: "Product",
+    cell: ({ row }) => <ProductIdentity product={row.original} />,
+  }),
+  columnHelper.accessor((product) => product.category.name, {
+    id: "category",
+    header: "Category",
+    cell: ({ getValue }) => getValue() || "—",
+  }),
+  columnHelper.display({
+    id: "price",
+    header: "Price",
+    cell: ({ row }) => formatPriceRange(row.original.offer),
+  }),
+  columnHelper.display({
+    id: "stock",
+    header: "Stock",
+    cell: ({ row }) => <StockCell product={row.original} />,
+  }),
+  columnHelper.display({
+    id: "status",
+    header: "Status",
+    cell: ({ row }) => <StatusCell product={row.original} />,
+  }),
+  columnHelper.accessor("updatedAt", {
+    header: "Updated",
+    cell: ({ getValue }) => formatProductDate(getValue()),
+  }),
+])
+
+const CELL_CLASS: Record<string, string> = {
+  product: "min-w-56",
+  category: "text-muted-foreground",
+  price: "whitespace-nowrap",
+  updatedAt: "whitespace-nowrap text-muted-foreground",
 }
 
 type ProductTableProps = {
@@ -29,79 +75,47 @@ type ProductTableProps = {
 }
 
 export function ProductTable({ products, isRefreshing }: ProductTableProps) {
+  const table = useTable({
+    features,
+    columns,
+    data: products,
+    getRowId: (product) => product.id,
+  })
+
   return (
     <div
-      className={
-        isRefreshing ? "opacity-70 transition-opacity" : "transition-opacity"
-      }
+      className={cn(
+        "transition-opacity",
+        isRefreshing && "pointer-events-none opacity-70"
+      )}
     >
-      <div className="hidden md:block">
-        <table className="w-full border-collapse text-left text-sm">
-          <caption className="sr-only">Store products</caption>
-          <thead className="border-b border-border text-xs text-muted-foreground">
-            <tr>
-              <th className="px-4 py-3 font-medium">Product</th>
-              <th className="px-4 py-3 font-medium">Category</th>
-              <th className="px-4 py-3 font-medium">Price</th>
-              <th className="px-4 py-3 font-medium">Stock</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Updated</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((product) => (
-              <tr
-                key={product.id}
-                className="border-b border-border last:border-0"
-              >
-                <td className="px-4 py-3">
-                  <ProductIdentity product={product} />
-                </td>
-                <td className="px-4 py-3 text-muted-foreground">
-                  {product.category.name || "—"}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap">
-                  {formatPriceRange(product.offer)}
-                </td>
-                <td className="px-4 py-3">
-                  <StockCell product={product} />
-                </td>
-                <td className="px-4 py-3">
-                  <StatusCell product={product} />
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
-                  {formatProductDate(product.updatedAt)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <ul className="divide-y divide-border md:hidden">
-        {products.map((product) => (
-          <li key={product.id} className="flex gap-3 px-4 py-4">
-            <ProductThumb product={product} />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{product.name}</p>
-              <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                {product.category.name || "Uncategorized"}
-              </p>
-              <p className="mt-2 text-sm">{formatPriceRange(product.offer)}</p>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <StatusCell product={product} />
-                <span className="text-xs text-muted-foreground">
-                  {product.offer.variantCount === 0
-                    ? "No variants"
-                    : product.offer.inStock
-                      ? "In stock"
-                      : "Out of stock"}
-                </span>
-              </div>
-            </div>
-          </li>
-        ))}
-      </ul>
+      <Table>
+        <TableCaption className="sr-only">Store products</TableCaption>
+        <TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id}>
+              {headerGroup.headers.map((header) => (
+                <TableHead key={header.id}>
+                  {header.isPlaceholder ? null : (
+                    <table.FlexRender header={header} />
+                  )}
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {table.getRowModel().rows.map((row) => (
+            <TableRow key={row.id}>
+              {row.getAllCells().map((cell) => (
+                <TableCell key={cell.id} className={CELL_CLASS[cell.column.id]}>
+                  <table.FlexRender cell={cell} />
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   )
 }
@@ -158,46 +172,42 @@ function StockCell({ product }: { product: Product }) {
   )
 }
 
+const STATUS_BADGE: Record<ProductStatus, string> = {
+  active: "border-transparent bg-brand-soft text-brand-text",
+  archived: "",
+}
+
+const APPROVAL_BADGE: Record<
+  ProductApprovalStatus,
+  { variant: "secondary" | "destructive" | "outline"; className?: string }
+> = {
+  pending: { variant: "outline" },
+  submitted: { variant: "secondary" },
+  approved: {
+    variant: "secondary",
+    className: "border-transparent bg-brand-soft text-brand-text",
+  },
+  rejected: { variant: "destructive" },
+}
+
 function StatusCell({ product }: { product: Product }) {
+  const approval = APPROVAL_BADGE[product.approvalStatus]
+
   return (
     <div className="flex flex-wrap gap-1.5">
-      <Badge className={STATUS_CLASS[product.status]}>
+      <Badge variant="secondary" className={STATUS_BADGE[product.status]}>
         {PRODUCT_STATUS_LABEL[product.status]}
       </Badge>
       <Badge
-        className={APPROVAL_CLASS[product.approvalStatus]}
+        variant={approval.variant}
+        className={approval.className}
         title={product.reviewNote || undefined}
       >
         {PRODUCT_APPROVAL_LABEL[product.approvalStatus]}
       </Badge>
-      <Badge
-        className={
-          product.isPublished
-            ? "bg-brand-soft text-brand-text"
-            : "bg-muted text-muted-foreground"
-        }
-      >
+      <Badge variant={product.isPublished ? "default" : "outline"}>
         {product.isPublished ? "Published" : "Unpublished"}
       </Badge>
     </div>
-  )
-}
-
-function Badge({
-  className,
-  title,
-  children,
-}: {
-  className: string
-  title?: string
-  children: ReactNode
-}) {
-  return (
-    <span
-      title={title}
-      className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium ${className}`}
-    >
-      {children}
-    </span>
   )
 }
