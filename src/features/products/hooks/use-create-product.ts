@@ -41,13 +41,7 @@ export function useCreateProduct() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({
-      payload,
-      images,
-    }: {
-      payload: CreateProductPayload
-      images: File[]
-    }) => createProduct(payload, images),
+    mutationFn: (payload: CreateProductPayload) => createProduct(payload),
     onSuccess: (product) => {
       queryClient.setQueryData(productKeys.detail(product.id), product)
       void queryClient.invalidateQueries({ queryKey: productKeys.lists() })

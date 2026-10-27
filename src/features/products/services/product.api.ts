@@ -50,33 +50,40 @@ export async function listVendorProducts(
   }
 }
 
-export async function createProduct(
-  payload: CreateProductPayload,
-  images: File[]
-) {
+export async function uploadProductImage(file: File) {
   const body = new FormData()
-  body.append("payload", JSON.stringify(payload))
-
-  for (const image of images) {
-    body.append("images", image, image.name)
-  }
+  body.append("image", file, file.name)
 
   try {
-    const { data } = await api.post<ApiSuccess<Product>>("/products", body, {
-      headers: { "Content-Type": "multipart/form-data" },
-      transformRequest: (form, headers) => {
-        if (
-          headers &&
-          typeof headers === "object" &&
-          "delete" in headers &&
-          typeof headers.delete === "function"
-        ) {
-          headers.delete("Content-Type")
-        }
+    const { data } = await api.post<ApiSuccess<{ url: string }>>(
+      "/products/image",
+      body,
+      {
+        headers: { "Content-Type": "multipart/form-data" },
+        transformRequest: (payload, headers) => {
+          if (
+            headers &&
+            typeof headers === "object" &&
+            "delete" in headers &&
+            typeof headers.delete === "function"
+          ) {
+            headers.delete("Content-Type")
+          }
 
-        return form
-      },
-    })
+          return payload
+        },
+      }
+    )
+
+    return data.data.url
+  } catch (error) {
+    throw toApiError(error)
+  }
+}
+
+export async function createProduct(payload: CreateProductPayload) {
+  try {
+    const { data } = await api.post<ApiSuccess<Product>>("/products", payload)
 
     return data.data
   } catch (error) {

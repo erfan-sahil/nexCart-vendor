@@ -20,6 +20,13 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { ApiError } from "@/lib/api/errors"
 
@@ -42,13 +49,10 @@ import {
 import { sellableCategories } from "../lib/sellable-categories"
 
 import { ProductAttributeFields } from "./product-attribute-fields"
-import {
-  ProductImageField,
-  type ProductImageDraft,
-} from "./product-image-field"
+import { ProductImageField } from "./product-image-field"
 
-const selectClass =
-  "h-9 w-full cursor-pointer rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive dark:bg-input/30"
+const selectContentClass =
+  "pointer-events-auto z-[70] w-(--radix-select-trigger-width)"
 
 type ProductField =
   | "name"
@@ -168,7 +172,8 @@ function ProductCreateForm({
   const store = useVendorStore(true)
   const tree = useCategoryTree(true)
   const [form, setForm] = useState<CreateProductFormValues>(EMPTY_PRODUCT_FORM)
-  const [images, setImages] = useState<ProductImageDraft[]>([])
+  const [images, setImages] = useState<string[]>([])
+  const [uploadingImage, setUploadingImage] = useState(false)
   const [drafts, setDrafts] = useState<Record<string, AttributeDraft>>({})
   const [errors, setErrors] = useState<FieldErrors>({})
   const [attributeErrors, setAttributeErrors] = useState<
@@ -177,6 +182,7 @@ function ProductCreateForm({
   const [formError, setFormError] = useState<string | null>(null)
   const attributes = useCategoryAttributes(form.categoryId)
   const saving = createProduct.isPending
+  const busy = saving || uploadingImage
   const categories = useMemo(
     () =>
       sellableCategories(
@@ -224,6 +230,11 @@ function ProductCreateForm({
 
   const submit = async (event?: FormEvent) => {
     event?.preventDefault()
+
+    if (uploadingImage) {
+      return
+    }
+
     setFormError(null)
 
     const parsed = createProductFormSchema.safeParse(form)
@@ -262,10 +273,9 @@ function ProductCreateForm({
     setAttributeErrors({})
 
     try {
-      await createProduct.mutateAsync({
-        payload: toCreatePayload(parsed.data, built.inputs),
-        images: images.map((image) => image.file),
-      })
+      await createProduct.mutateAsync(
+        toCreatePayload(parsed.data, built.inputs, images)
+      )
       onCreated()
       onClose()
     } catch (error) {
@@ -285,7 +295,7 @@ function ProductCreateForm({
     <Dialog
       open
       onOpenChange={(next) => {
-        if (!next && !saving) {
+        if (!next && !busy) {
           onClose()
         }
       }}
@@ -334,7 +344,7 @@ function ProductCreateForm({
                   className="h-9"
                   value={form.name}
                   aria-invalid={Boolean(errors.name)}
-                  disabled={saving}
+                  disabled={busy}
                   autoFocus
                   onChange={(event) => setField("name")(event.target.value)}
                 />
@@ -350,7 +360,7 @@ function ProductCreateForm({
                   placeholder="linen-shirt"
                   spellCheck={false}
                   aria-invalid={Boolean(errors.slug)}
-                  disabled={saving}
+                  disabled={busy}
                   onChange={(event) => setField("slug")(event.target.value)}
                 />
                 <FieldDescription>
@@ -361,32 +371,48 @@ function ProductCreateForm({
 
               <Field data-invalid={Boolean(errors.categoryId) || undefined}>
                 <FieldLabel htmlFor="product-category">Category</FieldLabel>
-                <select
-                  id="product-category"
-                  className={selectClass}
-                  value={form.categoryId}
-                  aria-invalid={Boolean(errors.categoryId)}
+                <Select
+                  value={form.categoryId || undefined}
                   disabled={
-                    saving ||
+                    busy ||
                     store.isLoading ||
                     tree.isLoading ||
                     categories.length === 0
                   }
-                  onChange={(event) =>
-                    setField("categoryId")(event.target.value)
-                  }
+                  onValueChange={(value) => setField("categoryId")(value)}
                 >
-                  <option value="">
-                    {store.isLoading || tree.isLoading
-                      ? "Loading categories…"
-                      : "Choose a category"}
-                  </option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.label}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger
+                    id="product-category"
+                    className="h-9! w-full cursor-pointer"
+                    aria-invalid={Boolean(errors.categoryId)}
+                  >
+                    <SelectValue
+                      placeholder={
+                        store.isLoading || tree.isLoading
+                          ? "Loading categories…"
+                          : "Choose a category"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent
+                    position="popper"
+                    align="start"
+                    side="bottom"
+                    sideOffset={6}
+                    collisionPadding={16}
+                    className={selectContentClass}
+                  >
+                    {categories.map((category) => (
+                      <SelectItem
+                        key={category.id}
+                        value={category.id}
+                        className="cursor-pointer"
+                      >
+                        {category.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FieldDescription>
                   {categoryMessage ??
                     "Only categories this store sells can be used."}
@@ -409,7 +435,7 @@ function ProductCreateForm({
                   assignments={attributes.data}
                   drafts={drafts}
                   errors={attributeErrors}
-                  disabled={saving}
+                  disabled={busy}
                   onChange={(attributeId, draft) => {
                     setDrafts((current) => ({
                       ...current,
@@ -438,7 +464,7 @@ function ProductCreateForm({
                   id="product-short-description"
                   value={form.shortDescription}
                   aria-invalid={Boolean(errors.shortDescription)}
-                  disabled={saving}
+                  disabled={busy}
                   onChange={(event) =>
                     setField("shortDescription")(event.target.value)
                   }
@@ -454,7 +480,7 @@ function ProductCreateForm({
                   id="product-description"
                   value={form.description}
                   aria-invalid={Boolean(errors.description)}
-                  disabled={saving}
+                  disabled={busy}
                   onChange={(event) =>
                     setField("description")(event.target.value)
                   }
@@ -470,7 +496,7 @@ function ProductCreateForm({
                   value={form.tags}
                   placeholder="linen, summer, shirt"
                   aria-invalid={Boolean(errors.tags)}
-                  disabled={saving}
+                  disabled={busy}
                   onChange={(event) => setField("tags")(event.target.value)}
                 />
                 <FieldDescription>Separate tags with commas.</FieldDescription>
@@ -479,15 +505,10 @@ function ProductCreateForm({
 
               <Field data-invalid={Boolean(errors.status) || undefined}>
                 <FieldLabel htmlFor="product-status">Status</FieldLabel>
-                <select
-                  id="product-status"
-                  className={selectClass}
+                <Select
                   value={form.status}
-                  aria-invalid={Boolean(errors.status)}
-                  disabled={saving}
-                  onChange={(event) => {
-                    const value = event.target.value
-
+                  disabled={busy}
+                  onValueChange={(value) => {
                     if (
                       (PRODUCT_STATUSES as readonly string[]).includes(value)
                     ) {
@@ -497,12 +518,32 @@ function ProductCreateForm({
                     }
                   }}
                 >
-                  {PRODUCT_STATUSES.map((status) => (
-                    <option key={status} value={status}>
-                      {PRODUCT_STATUS_LABEL[status]}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger
+                    id="product-status"
+                    className="h-9! w-full cursor-pointer"
+                    aria-invalid={Boolean(errors.status)}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent
+                    position="popper"
+                    align="start"
+                    side="bottom"
+                    sideOffset={6}
+                    collisionPadding={16}
+                    className={selectContentClass}
+                  >
+                    {PRODUCT_STATUSES.map((status) => (
+                      <SelectItem
+                        key={status}
+                        value={status}
+                        className="cursor-pointer"
+                      >
+                        {PRODUCT_STATUS_LABEL[status]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FieldDescription>
                   Archived products stay out of the storefront.
                 </FieldDescription>
@@ -513,6 +554,7 @@ function ProductCreateForm({
                 images={images}
                 error={errors.images}
                 disabled={saving}
+                onPendingChange={setUploadingImage}
                 onChange={(next) => {
                   setImages(next)
                   setErrors((current) => {
@@ -534,7 +576,7 @@ function ProductCreateForm({
               type="button"
               variant="outline"
               className="cursor-pointer"
-              disabled={saving}
+              disabled={busy}
               onClick={onClose}
             >
               Cancel
@@ -542,7 +584,7 @@ function ProductCreateForm({
             <Button
               type="button"
               className="relative z-10 cursor-pointer"
-              disabled={saving || !specsReady}
+              disabled={busy || !specsReady}
               onPointerDown={(event) => event.stopPropagation()}
               onClick={(event) => {
                 event.preventDefault()
@@ -550,7 +592,11 @@ function ProductCreateForm({
                 void submit()
               }}
             >
-              {saving ? "Creating…" : "Create product"}
+              {uploadingImage
+                ? "Uploading…"
+                : saving
+                  ? "Creating…"
+                  : "Create product"}
             </Button>
           </DialogFooter>
         </form>

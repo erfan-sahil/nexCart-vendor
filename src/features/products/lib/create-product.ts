@@ -216,11 +216,13 @@ export type CreateProductPayload = {
   description?: string
   tags?: string[]
   attributes?: ProductAttributeInput[]
+  images: string[]
 }
 
 export function toCreatePayload(
   form: CreateProductFormValues,
-  attributes: ProductAttributeInput[]
+  attributes: ProductAttributeInput[],
+  images: string[]
 ): CreateProductPayload {
   const tags = form.tags
     .split(",")
@@ -240,5 +242,6 @@ export function toCreatePayload(
       : {}),
     ...(tags.length > 0 ? { tags } : {}),
     ...(attributes.length > 0 ? { attributes } : {}),
+    images,
   }
 }

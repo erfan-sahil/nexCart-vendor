@@ -1,5 +1,12 @@
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 import {
   emptyAttributeDraft,
@@ -8,8 +15,8 @@ import {
 } from "../lib/create-product"
 import type { CategoryAttribute } from "../types"
 
-const selectClass =
-  "h-9 w-full cursor-pointer rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive dark:bg-input/30"
+const selectContentClass =
+  "pointer-events-auto z-[70] w-(--radix-select-trigger-width)"
 
 type ProductAttributeFieldsProps = {
   assignments: CategoryAttribute[]
@@ -131,26 +138,42 @@ function AttributeControl({
 
   if (type === "select") {
     return (
-      <select
-        id={id}
-        className={selectClass}
-        value={draft.optionIds[0] ?? ""}
-        aria-invalid={Boolean(error)}
+      <Select
+        value={draft.optionIds[0]}
         disabled={disabled}
-        onChange={(event) =>
+        onValueChange={(value) =>
           onChange({
             ...draft,
-            optionIds: event.target.value ? [event.target.value] : [],
+            optionIds: [value],
           })
         }
       >
-        <option value="">Choose an option</option>
-        {options.map((option) => (
-          <option key={option.id} value={option.id}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+        <SelectTrigger
+          id={id}
+          className="h-9! w-full cursor-pointer"
+          aria-invalid={Boolean(error)}
+        >
+          <SelectValue placeholder="Choose an option" />
+        </SelectTrigger>
+        <SelectContent
+          position="popper"
+          align="start"
+          side="bottom"
+          sideOffset={6}
+          collisionPadding={16}
+          className={selectContentClass}
+        >
+          {options.map((option) => (
+            <SelectItem
+              key={option.id}
+              value={option.id}
+              className="cursor-pointer"
+            >
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     )
   }
 
