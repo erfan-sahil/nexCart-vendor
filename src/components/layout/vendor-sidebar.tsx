@@ -1,9 +1,12 @@
 import { useState } from "react"
+import { ChevronRight, LogOut, X } from "lucide-react"
 import { NavLink, useLocation } from "react-router"
 
+import { isNavGroup, NAV, type NavPage } from "@/app/navigation"
+import { BrandLogo } from "@/components/shared"
+import { useLogout } from "@/features/auth/hooks"
+import { useAuthStore } from "@/features/auth/store"
 import { cn } from "@/lib/utils"
-import { isNavGroup, NAV, type NavPage } from "@/lib/navigation"
-import { ChevronRight, X } from "lucide-react"
 
 type VendorSidebarProps = {
   collapsed: boolean
@@ -61,6 +64,10 @@ export function VendorSidebar({
   onClose,
 }: VendorSidebarProps) {
   const { pathname } = useLocation()
+  const user = useAuthStore((state) => state.user)
+  const logout = useLogout()
+  const name = user ? `${user.firstName} ${user.lastName}`.trim() : "Vendor"
+  const initial = name.charAt(0).toUpperCase() || "V"
   const [manual, setManual] = useState<{
     path: string
     open: Record<string, boolean>
@@ -82,11 +89,12 @@ export function VendorSidebar({
           collapsed && "lg:justify-center lg:px-2"
         )}
       >
-        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-sidebar-primary text-sm font-semibold text-sidebar-primary-foreground">
-          N
-        </span>
+        <BrandLogo className={cn("h-7", collapsed && "lg:hidden")} />
+        <BrandLogo
+          variant="mark"
+          className={cn("hidden", collapsed && "lg:block")}
+        />
         <div className={cn("min-w-0 flex-1", collapsed && "lg:hidden")}>
-          <p className="truncate text-sm font-semibold">NexCart</p>
           <p className="truncate text-xs text-sidebar-foreground/60">Vendor</p>
         </div>
         <button
@@ -185,18 +193,28 @@ export function VendorSidebar({
         <div
           className={cn(
             "flex items-center gap-3 rounded-lg px-2 py-2",
-            collapsed && "lg:justify-center lg:px-0"
+            collapsed && "lg:flex-col lg:gap-2 lg:px-0"
           )}
         >
           <span className="grid size-9 shrink-0 place-items-center rounded-full bg-sidebar-accent text-sm font-semibold text-sidebar-accent-foreground">
-            V
+            {initial}
           </span>
-          <div className={cn("min-w-0", collapsed && "lg:hidden")}>
-            <p className="truncate text-sm font-medium">Harbor Goods</p>
+          <div className={cn("min-w-0 flex-1", collapsed && "lg:hidden")}>
+            <p className="truncate text-sm font-medium">{name}</p>
             <p className="truncate text-xs text-sidebar-foreground/60">
-              Store owner
+              {user?.email ?? "Vendor"}
             </p>
           </div>
+          <button
+            type="button"
+            onClick={() => logout.mutate()}
+            disabled={logout.isPending}
+            className="grid size-8 shrink-0 place-items-center rounded-lg text-sidebar-foreground hover:bg-sidebar-accent disabled:opacity-50"
+            aria-label="Log out"
+            title="Log out"
+          >
+            <LogOut className="size-4" />
+          </button>
         </div>
       </div>
     </aside>

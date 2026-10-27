@@ -1,9 +1,9 @@
 import { useEffect } from "react"
-
-import { Button } from "@/components/ui/button"
-import { useTheme } from "@/components/theme-provider"
-import { usePageMeta } from "@/hooks/use-page-meta"
 import { Menu, Moon, PanelLeft, Sun } from "lucide-react"
+
+import { useTheme } from "@/app/providers/theme-provider"
+import { Button } from "@/components/ui/button"
+import { usePageMeta } from "@/hooks"
 
 type VendorHeaderProps = {
   collapsed: boolean

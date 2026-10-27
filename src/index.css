@@ -54,14 +54,14 @@
 
 :root {
   /*
-   * Gold on neutral gray. Admin uses sky blue.
-   * Change --brand once. Fills, badges, charts, and the
-   * active sidebar item all take their gold from that value.
+   * Warm orange on neutral gray. Admin uses sky blue.
+   * Light mode is a mid orange. Dark mode is a little deeper
+   * so fills stay clear on black without turning pale.
    */
-  --brand: #f6c445;
-  --brand-foreground: #1a1508;
-  --brand-deep: #d49a12;
-  --brand-text: #9a6b00;
+  --brand: #f0783a;
+  --brand-foreground: #241208;
+  --brand-deep: #d46228;
+  --brand-text: #c2410c;
   --brand-soft: color-mix(in srgb, var(--brand) 18%, #ffffff);
 
   --background: #f6f6f5;
@@ -89,17 +89,21 @@
   --chart-5: #a1a1aa;
   --radius: 0.75rem;
   --sidebar: #111110;
-  --sidebar-foreground: #f5f5f4;
+  --sidebar-foreground: #ffffff;
   --sidebar-primary: var(--brand);
-  --sidebar-primary-foreground: var(--brand-foreground);
+  --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #262622;
-  --sidebar-accent-foreground: #f5f5f4;
+  --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #2c2c28;
   --sidebar-ring: var(--brand);
 }
 
 .dark {
-  --brand-text: #f6c445;
+  /* A bit deeper than light mode so it stays visible without looking pale. */
+  --brand: #e88848;
+  --brand-foreground: #241208;
+  --brand-deep: #c96a32;
+  --brand-text: #ee9a62;
   --brand-soft: color-mix(in srgb, var(--brand) 18%, transparent);
 
   --background: #0e0e0d;
