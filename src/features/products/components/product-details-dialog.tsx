@@ -15,6 +15,7 @@ import { resolveAssetUrl } from "@/lib/api/assets"
 import { cn } from "@/lib/utils"
 
 import {
+  formatOriginalPriceRange,
   formatPriceRange,
   formatProductDate,
   formatVariantCount,
@@ -70,6 +71,7 @@ function ProductDetails({
     product.ratingSummary.count === 0
       ? "No reviews yet"
       : `${product.ratingSummary.count} ${product.ratingSummary.count === 1 ? "review" : "reviews"}`
+  const originalPrice = formatOriginalPriceRange(product.offer)
 
   return (
     <Dialog open onOpenChange={(next) => !next && onClose()}>
@@ -101,7 +103,11 @@ function ProductDetails({
         </DialogHeader>
 
         <dl className="grid grid-cols-3 border-b border-border">
-          <Stat label="Price" value={formatPriceRange(product.offer)} />
+          <Stat
+            label="Price"
+            value={formatPriceRange(product.offer)}
+            detail={originalPrice ? `Was ${originalPrice}` : undefined}
+          />
           <Stat label="Stock" value={stock} detail={stockDetail} />
           <Stat label="Rating" value={rating} detail={ratingDetail} />
         </dl>

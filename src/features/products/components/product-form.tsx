@@ -258,7 +258,8 @@ export function ProductForm({
         (offer) =>
           offer.sku.trim() !== "" ||
           offer.price.trim() !== "" ||
-          offer.compareAtPrice.trim() !== "" ||
+          offer.discountType !== "" ||
+          offer.discountValue.trim() !== "" ||
           offer.stock.trim() !== ""
       )
     const offer =

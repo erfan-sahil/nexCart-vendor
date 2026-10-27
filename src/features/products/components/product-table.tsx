@@ -27,11 +27,12 @@ import { cn } from "@/lib/utils"
 
 import { PRODUCT_APPROVAL_LABEL, PRODUCT_STATUS_LABEL } from "../constants"
 import {
+  formatOriginalPriceRange,
   formatPriceRange,
   formatProductDate,
   formatVariantCount,
 } from "../lib/format"
-import type { Product } from "../types"
+import type { Product, ProductOffer } from "../types"
 
 const features = tableFeatures({})
 const columnHelper = createColumnHelper<typeof features, Product>()
@@ -50,7 +51,7 @@ const columns = columnHelper.columns([
   columnHelper.display({
     id: "price",
     header: "Price",
-    cell: ({ row }) => formatPriceRange(row.original.offer),
+    cell: ({ row }) => <PriceCell offer={row.original.offer} />,
   }),
   columnHelper.display({
     id: "stock",
@@ -271,6 +272,19 @@ function ProductThumb({ product }: { product: Product }) {
       className="size-10 shrink-0 rounded-lg object-cover"
       onError={() => setFailed(true)}
     />
+  )
+}
+
+function PriceCell({ offer }: { offer: ProductOffer }) {
+  const original = formatOriginalPriceRange(offer)
+
+  return (
+    <div className="min-w-0">
+      <p>{formatPriceRange(offer)}</p>
+      {original ? (
+        <p className="text-xs text-muted-foreground line-through">{original}</p>
+      ) : null}
+    </div>
   )
 }
 

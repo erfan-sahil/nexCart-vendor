@@ -19,7 +19,8 @@ const offerDraftSchema = z.object({
   key: z.string(),
   sku: z.string(),
   price: z.string(),
-  compareAtPrice: z.string(),
+  discountType: z.enum(["", "percent", "amount"]),
+  discountValue: z.string(),
   stock: z.string(),
   attributes: z.record(attributeDraftSchema),
 })
@@ -45,7 +46,8 @@ function offersStarted(mode: OfferMode, offers: OfferDraft[]) {
       (offer) =>
         offer.sku.trim() !== "" ||
         offer.price.trim() !== "" ||
-        offer.compareAtPrice.trim() !== "" ||
+        offer.discountType !== "" ||
+        offer.discountValue.trim() !== "" ||
         offer.stock.trim() !== ""
     )
   )

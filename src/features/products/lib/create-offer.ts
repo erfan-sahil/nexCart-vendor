@@ -11,11 +11,14 @@ const MAX_OFFERS = 20
 
 export type OfferMode = "single" | "variants"
 
+export type DiscountType = "percent" | "amount"
+
 export type OfferDraft = {
   key: string
   sku: string
   price: string
-  compareAtPrice: string
+  discountType: "" | DiscountType
+  discountValue: string
   stock: string
   attributes: Record<string, AttributeDraft>
 }
@@ -23,7 +26,8 @@ export type OfferDraft = {
 export type OfferFieldErrors = {
   sku?: string
   price?: string
-  compareAtPrice?: string
+  discountType?: string
+  discountValue?: string
   stock?: string
   attributes?: Record<string, string>
 }
@@ -33,7 +37,8 @@ export function emptyOffer(): OfferDraft {
     key: crypto.randomUUID(),
     sku: "",
     price: "",
-    compareAtPrice: "",
+    discountType: "",
+    discountValue: "",
     stock: "",
     attributes: {},
   }
@@ -83,10 +88,11 @@ export function buildOfferPayloads(
 
     const priceText = offer.price.trim()
     const price = priceText === "" ? null : readMoney(priceText)
-    const compareAt =
-      offer.compareAtPrice.trim() === ""
-        ? null
-        : readMoney(offer.compareAtPrice)
+    const discount = readDiscount(
+      offer.discountType,
+      offer.discountValue,
+      price
+    )
     const stockText = offer.stock.trim()
     const stock = stockText === "" ? null : readStock(stockText)
 
@@ -96,10 +102,8 @@ export function buildOfferPayloads(
       fieldErrors.price = "Enter a valid price."
     }
 
-    if (compareAt === null && offer.compareAtPrice.trim() !== "") {
-      fieldErrors.compareAtPrice = "Enter a valid compare-at price."
-    } else if (price !== null && compareAt !== null && compareAt <= price) {
-      fieldErrors.compareAtPrice = "Must be higher than the selling price."
+    if (discount.error) {
+      fieldErrors[discount.field] = discount.error
     }
 
     if (!stockText) {
@@ -143,7 +147,7 @@ export function buildOfferPayloads(
       price,
       stock,
       isDefault: index === 0,
-      ...(compareAt !== null ? { compareAtPrice: compareAt } : {}),
+      ...(discount.discount ? discount.discount : {}),
       ...(mode === "single" ? { simple: true } : { attributes }),
     })
   })
@@ -156,6 +160,103 @@ export function buildOfferPayloads(
         ? "Check the SKU, price, stock, and variant fields."
         : null,
   }
+}
+
+function readDiscount(
+  type: OfferDraft["discountType"],
+  value: string,
+  price: number | null
+) {
+  const text = value.trim()
+
+  if (!type && !text) {
+    return { discount: null, error: null, field: "discountValue" as const }
+  }
+
+  if (!type) {
+    return {
+      discount: null,
+      error: "Choose percentage or amount.",
+      field: "discountType" as const,
+    }
+  }
+
+  if (!text) {
+    return {
+      discount: null,
+      error: "Enter a discount.",
+      field: "discountValue" as const,
+    }
+  }
+
+  const amount = readMoney(text)
+
+  if (amount === null || amount <= 0) {
+    return {
+      discount: null,
+      error: "Enter a discount greater than 0.",
+      field: "discountValue" as const,
+    }
+  }
+
+  if (type === "percent" && amount > 100) {
+    return {
+      discount: null,
+      error: "Percentage discount cannot be more than 100.",
+      field: "discountValue" as const,
+    }
+  }
+
+  if (type === "amount" && price !== null && amount > price) {
+    return {
+      discount: null,
+      error: "Discount amount cannot be more than the original price.",
+      field: "discountValue" as const,
+    }
+  }
+
+  return {
+    discount: { discountType: type, discountValue: amount },
+    error: null,
+    field: "discountValue" as const,
+  }
+}
+
+export function previewCurrentPrice(
+  priceText: string,
+  type: OfferDraft["discountType"],
+  valueText: string
+) {
+  const price = priceText.trim() === "" ? null : readMoney(priceText)
+
+  if (price === null) {
+    return null
+  }
+
+  if (!type || valueText.trim() === "") {
+    return price
+  }
+
+  const discount = readDiscount(type, valueText, price)
+
+  if (discount.error || !discount.discount) {
+    return null
+  }
+
+  if (discount.discount.discountType === "percent") {
+    return (
+      Math.round(
+        (price * (1 - discount.discount.discountValue / 100) + Number.EPSILON) *
+          100
+      ) / 100
+    )
+  }
+
+  return (
+    Math.round(
+      (price - discount.discount.discountValue + Number.EPSILON) * 100
+    ) / 100
+  )
 }
 
 function readMoney(value: string) {

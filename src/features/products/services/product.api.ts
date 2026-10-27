@@ -114,7 +114,8 @@ export type CreateVariantPayload = {
   sku: string
   price: number
   stock: number
-  compareAtPrice?: number
+  discountType?: "percent" | "amount"
+  discountValue?: number
   isDefault: boolean
   simple?: boolean
   attributes?: {

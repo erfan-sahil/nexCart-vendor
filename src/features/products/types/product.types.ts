@@ -55,6 +55,8 @@ export type ProductAttribute = {
 export type ProductOffer = {
   minPrice: number | null
   maxPrice: number | null
+  minOriginalPrice: number | null
+  maxOriginalPrice: number | null
   inStock: boolean
   variantCount: number
   defaultVariantId: string | null

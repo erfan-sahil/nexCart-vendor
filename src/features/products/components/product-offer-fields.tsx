@@ -1,6 +1,7 @@
 import { Plus, Trash2 } from "lucide-react"
 import {
   Controller,
+  useController,
   useFieldArray,
   useFormState,
   useWatch,
@@ -23,7 +24,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-import { emptyOffer } from "../lib/create-offer"
+import { emptyOffer, previewCurrentPrice } from "../lib/create-offer"
+import { formatMoney } from "../lib/format"
 import {
   emptyAttributeDraft,
   variantAssignments,
@@ -198,20 +200,22 @@ export function ProductOfferFields({
               control={control}
               name={`offers.${index}.price`}
               id={`offer-price-${offer.key}`}
-              label="Price"
+              label="Original price"
               placeholder="0.00"
               inputMode="decimal"
               required={required}
               disabled={disabled}
             />
-            <OfferInput
+            <DiscountTypeField
               control={control}
-              name={`offers.${index}.compareAtPrice`}
-              id={`offer-compare-${offer.key}`}
-              label="Compare-at price"
-              placeholder="Optional"
-              inputMode="decimal"
-              description="Leave blank if there is no higher price."
+              index={index}
+              id={`offer-discount-type-${offer.key}`}
+              disabled={disabled}
+            />
+            <DiscountValueField
+              control={control}
+              index={index}
+              id={`offer-discount-${offer.key}`}
               disabled={disabled}
             />
             <OfferInput
@@ -224,6 +228,7 @@ export function ProductOfferFields({
               required={required}
               disabled={disabled}
             />
+            <CurrentPrice control={control} index={index} />
           </div>
         </div>
       ))}
@@ -241,6 +246,139 @@ export function ProductOfferFields({
         </Button>
       ) : null}
     </div>
+  )
+}
+
+function DiscountTypeField({
+  control,
+  index,
+  id,
+  disabled,
+}: {
+  control: Control<ProductFormValues>
+  index: number
+  id: string
+  disabled: boolean
+}) {
+  const discountValue = useController({
+    control,
+    name: `offers.${index}.discountValue`,
+  })
+
+  return (
+    <Controller
+      name={`offers.${index}.discountType`}
+      control={control}
+      render={({ field, fieldState }) => (
+        <Field data-invalid={fieldState.invalid}>
+          <FieldLabel htmlFor={id}>Discount type</FieldLabel>
+          <Select
+            value={field.value || "none"}
+            disabled={disabled}
+            onValueChange={(value) => {
+              const next = value === "none" ? "" : value
+              field.onChange(next)
+              if (!next) {
+                discountValue.field.onChange("")
+              }
+            }}
+          >
+            <SelectTrigger
+              id={id}
+              className="h-9! w-full cursor-pointer"
+              aria-invalid={fieldState.invalid}
+            >
+              <SelectValue placeholder="No discount" />
+            </SelectTrigger>
+            <SelectContent
+              position="popper"
+              align="start"
+              side="bottom"
+              sideOffset={6}
+              collisionPadding={16}
+              className={selectContentClass}
+            >
+              <SelectItem value="none" className="cursor-pointer">
+                No discount
+              </SelectItem>
+              <SelectItem value="percent" className="cursor-pointer">
+                Percentage
+              </SelectItem>
+              <SelectItem value="amount" className="cursor-pointer">
+                Amount
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          {fieldState.invalid ? (
+            <FieldError errors={[fieldState.error]} />
+          ) : null}
+        </Field>
+      )}
+    />
+  )
+}
+
+function DiscountValueField({
+  control,
+  index,
+  id,
+  disabled,
+}: {
+  control: Control<ProductFormValues>
+  index: number
+  id: string
+  disabled: boolean
+}) {
+  const discountType = useWatch({
+    control,
+    name: `offers.${index}.discountType`,
+  })
+
+  return (
+    <OfferInput
+      control={control}
+      name={`offers.${index}.discountValue`}
+      id={id}
+      label="Discount"
+      placeholder={discountType === "amount" ? "5.00" : "10"}
+      inputMode="decimal"
+      disabled={disabled || !discountType}
+      description={
+        discountType === "percent"
+          ? "Percent taken off the original price."
+          : discountType === "amount"
+            ? "Amount taken off the original price."
+            : "Choose a discount type to enter one."
+      }
+    />
+  )
+}
+
+function CurrentPrice({
+  control,
+  index,
+}: {
+  control: Control<ProductFormValues>
+  index: number
+}) {
+  const price = useWatch({ control, name: `offers.${index}.price` })
+  const discountType = useWatch({
+    control,
+    name: `offers.${index}.discountType`,
+  })
+  const discountValue = useWatch({
+    control,
+    name: `offers.${index}.discountValue`,
+  })
+  const current = previewCurrentPrice(price, discountType, discountValue)
+
+  return (
+    <p className="self-end text-sm text-muted-foreground sm:col-span-2">
+      Current price{" "}
+      <span className="font-medium text-foreground">
+        {current === null ? "—" : formatMoney(current)}
+      </span>
+    </p>
   )
 }
 
