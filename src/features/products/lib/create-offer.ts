@@ -34,7 +34,7 @@ export function emptyOffer(): OfferDraft {
     sku: "",
     price: "",
     compareAtPrice: "",
-    stock: "0",
+    stock: "",
     attributes: {},
   }
 }
@@ -55,7 +55,7 @@ export function buildOfferPayloads(
     return {
       payloads,
       errors,
-      message: "Add a price for this product.",
+      message: "Add a SKU, price, and stock for this product.",
     }
   }
 
@@ -71,7 +71,9 @@ export function buildOfferPayloads(
     const fieldErrors: OfferFieldErrors = {}
     const sku = offer.sku.trim().toUpperCase()
 
-    if (!skuPattern.test(sku)) {
+    if (!sku) {
+      fieldErrors.sku = "Enter a SKU."
+    } else if (!skuPattern.test(sku)) {
       fieldErrors.sku = "Use 2–40 letters, numbers, and hyphens."
     } else if (skus.has(sku)) {
       fieldErrors.sku = "Each SKU must be unique."
@@ -79,14 +81,18 @@ export function buildOfferPayloads(
       skus.add(sku)
     }
 
-    const price = readMoney(offer.price)
+    const priceText = offer.price.trim()
+    const price = priceText === "" ? null : readMoney(priceText)
     const compareAt =
       offer.compareAtPrice.trim() === ""
         ? null
         : readMoney(offer.compareAtPrice)
-    const stock = readStock(offer.stock)
+    const stockText = offer.stock.trim()
+    const stock = stockText === "" ? null : readStock(stockText)
 
-    if (price === null) {
+    if (!priceText) {
+      fieldErrors.price = "Enter a price."
+    } else if (price === null) {
       fieldErrors.price = "Enter a valid price."
     }
 
@@ -96,7 +102,9 @@ export function buildOfferPayloads(
       fieldErrors.compareAtPrice = "Must be higher than the selling price."
     }
 
-    if (stock === null) {
+    if (!stockText) {
+      fieldErrors.stock = "Enter a stock quantity."
+    } else if (stock === null) {
       fieldErrors.stock = "Enter a whole number."
     }
 
@@ -145,7 +153,7 @@ export function buildOfferPayloads(
     errors,
     message:
       Object.keys(errors).length > 0
-        ? "Check the price and variant fields."
+        ? "Check the SKU, price, stock, and variant fields."
         : null,
   }
 }

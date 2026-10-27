@@ -23,6 +23,7 @@ type ProductImageFieldProps = {
   images: string[]
   error?: string
   disabled?: boolean
+  required?: boolean
   onChange: (images: string[]) => void
   onPendingChange?: (pending: boolean) => void
 }
@@ -31,6 +32,7 @@ export function ProductImageField({
   images,
   error,
   disabled = false,
+  required = false,
   onChange,
   onPendingChange,
 }: ProductImageFieldProps) {
@@ -123,7 +125,9 @@ export function ProductImageField({
 
   return (
     <Field data-invalid={Boolean(message) || undefined}>
-      <FieldLabel htmlFor="product-images">Images</FieldLabel>
+      <FieldLabel htmlFor="product-images">
+        Images{required ? " *" : ""}
+      </FieldLabel>
       <input
         ref={inputRef}
         id="product-images"
@@ -131,6 +135,8 @@ export function ProductImageField({
         accept={IMAGE_TYPES.join(",")}
         multiple
         className="sr-only"
+        required={required}
+        aria-required={required}
         disabled={busy || !canAdd}
         onChange={(event) => void onFiles(event.target.files)}
       />

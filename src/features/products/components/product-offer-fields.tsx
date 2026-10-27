@@ -1,4 +1,11 @@
 import { Plus, Trash2 } from "lucide-react"
+import {
+  Controller,
+  useFieldArray,
+  useFormState,
+  useWatch,
+} from "react-hook-form"
+import type { Control, FieldPath } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -16,245 +23,282 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 
-import {
-  emptyOffer,
-  type OfferDraft,
-  type OfferFieldErrors,
-  type OfferMode,
-} from "../lib/create-offer"
+import { emptyOffer } from "../lib/create-offer"
 import {
   emptyAttributeDraft,
   variantAssignments,
   type AttributeDraft,
 } from "../lib/create-product"
+import type { ProductFormValues } from "../lib/product-form-schema"
 import type { CategoryAttribute } from "../types"
 
 const selectContentClass =
   "pointer-events-auto z-[70] w-(--radix-select-trigger-width)"
 
 type ProductOfferFieldsProps = {
-  mode: OfferMode
-  offers: OfferDraft[]
+  control: Control<ProductFormValues>
   assignments: CategoryAttribute[]
-  errors: Record<string, OfferFieldErrors>
   disabled?: boolean
+  required?: boolean
   canUseVariants: boolean
-  onModeChange: (mode: OfferMode) => void
-  onChange: (offers: OfferDraft[]) => void
 }
 
 export function ProductOfferFields({
-  mode,
-  offers,
+  control,
   assignments,
-  errors,
   disabled = false,
+  required = false,
   canUseVariants,
-  onModeChange,
-  onChange,
 }: ProductOfferFieldsProps) {
   const axes = variantAssignments(assignments)
-  const rows = mode === "single" ? offers.slice(0, 1) : offers
-
-  const updateRow = (key: string, patch: Partial<OfferDraft>) => {
-    onChange(
-      offers.map((offer) =>
-        offer.key === key ? { ...offer, ...patch } : offer
-      )
-    )
-  }
+  const offerMode = useWatch({ control, name: "offerMode" })
+  const { errors } = useFormState({ control, name: "offers" })
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "offers",
+    keyName: "fieldId",
+  })
+  const rows = offerMode === "single" ? fields.slice(0, 1) : fields
+  const offersError = errors.offers
+  const offersMessage =
+    offersError &&
+    "message" in offersError &&
+    typeof offersError.message === "string"
+      ? offersError.message
+      : null
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         <p className="text-sm font-medium">Selling</p>
-        <div className="grid gap-2 sm:grid-cols-2">
-          <ModeChoice
-            name="offer-mode"
-            checked={mode === "single"}
-            disabled={disabled}
-            title="No variants"
-            description="One price and one SKU."
-            onSelect={() => onModeChange("single")}
-          />
-          <ModeChoice
-            name="offer-mode"
-            checked={mode === "variants"}
-            disabled={disabled}
-            title="Has variants"
-            description={
-              canUseVariants
-                ? "A row for each option, such as size or color."
-                : "Choose this to add a row for each option, such as size or color."
-            }
-            onSelect={() => onModeChange("variants")}
-          />
-        </div>
+        <Controller
+          name="offerMode"
+          control={control}
+          render={({ field }) => (
+            <div className="grid gap-2 sm:grid-cols-2">
+              <ModeChoice
+                name="offer-mode"
+                checked={field.value === "single"}
+                disabled={disabled}
+                title="No variants"
+                description="One price and one SKU."
+                onSelect={() => field.onChange("single")}
+              />
+              <ModeChoice
+                name="offer-mode"
+                checked={field.value === "variants"}
+                disabled={disabled}
+                title="Has variants"
+                description={
+                  canUseVariants
+                    ? "A row for each option, such as size or color."
+                    : "Choose this to add a row for each option, such as size or color."
+                }
+                onSelect={() => field.onChange("variants")}
+              />
+            </div>
+          )}
+        />
       </div>
 
-      {mode === "variants" && axes.length === 0 ? (
+      {offersMessage ? (
+        <p className="text-sm text-destructive" role="alert">
+          {offersMessage}
+        </p>
+      ) : null}
+
+      {offerMode === "variants" && axes.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           This category has no variant attributes yet. Assign options such as
           size or color to the category, then set them on each variant.
         </p>
       ) : null}
 
-      {rows.map((offer, index) => {
-        const fieldErrors = errors[offer.key]
-
-        return (
-          <div
-            key={offer.key}
-            className="flex flex-col gap-3 rounded-lg border border-border p-3"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-medium">
-                {mode === "single" ? "Price and stock" : `Variant ${index + 1}`}
-                {index === 0 && mode === "variants" ? " · Default" : ""}
-              </p>
-              {mode === "variants" && rows.length > 1 ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  className="cursor-pointer"
-                  disabled={disabled}
-                  aria-label={`Remove variant ${index + 1}`}
-                  onClick={() =>
-                    onChange(offers.filter((item) => item.key !== offer.key))
-                  }
-                >
-                  <Trash2 />
-                </Button>
-              ) : null}
-            </div>
-
-            {mode === "variants" ? (
-              <div className="grid gap-3 sm:grid-cols-2">
-                {axes.map((assignment) => {
-                  const id = assignment.attribute.id
-                  const draft = offer.attributes[id] ?? emptyAttributeDraft()
-                  const error = fieldErrors?.attributes?.[id]
-                  const label = assignment.attribute.unit
-                    ? `${assignment.attribute.name} (${assignment.attribute.unit})`
-                    : assignment.attribute.name
-
-                  return (
-                    <Field key={id} data-invalid={Boolean(error) || undefined}>
-                      <FieldLabel htmlFor={`offer-${offer.key}-${id}`}>
-                        {label}
-                      </FieldLabel>
-                      <VariantOptionControl
-                        id={`offer-${offer.key}-${id}`}
-                        assignment={assignment}
-                        draft={draft}
-                        error={error}
-                        disabled={disabled}
-                        onChange={(next) =>
-                          updateRow(offer.key, {
-                            attributes: { ...offer.attributes, [id]: next },
-                          })
-                        }
-                      />
-                      <FieldError>{error}</FieldError>
-                    </Field>
-                  )
-                })}
-              </div>
-            ) : null}
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field data-invalid={Boolean(fieldErrors?.sku) || undefined}>
-                <FieldLabel htmlFor={`offer-sku-${offer.key}`}>SKU</FieldLabel>
-                <Input
-                  id={`offer-sku-${offer.key}`}
-                  className="h-9"
-                  value={offer.sku}
-                  placeholder="SHIRT-RED-M"
-                  aria-invalid={Boolean(fieldErrors?.sku)}
-                  disabled={disabled}
-                  onChange={(event) =>
-                    updateRow(offer.key, { sku: event.target.value })
-                  }
-                />
-                <FieldError>{fieldErrors?.sku}</FieldError>
-              </Field>
-              <Field data-invalid={Boolean(fieldErrors?.price) || undefined}>
-                <FieldLabel htmlFor={`offer-price-${offer.key}`}>
-                  Price
-                </FieldLabel>
-                <Input
-                  id={`offer-price-${offer.key}`}
-                  className="h-9"
-                  inputMode="decimal"
-                  value={offer.price}
-                  placeholder="0.00"
-                  aria-invalid={Boolean(fieldErrors?.price)}
-                  disabled={disabled}
-                  onChange={(event) =>
-                    updateRow(offer.key, { price: event.target.value })
-                  }
-                />
-                <FieldError>{fieldErrors?.price}</FieldError>
-              </Field>
-              <Field
-                data-invalid={Boolean(fieldErrors?.compareAtPrice) || undefined}
+      {rows.map((offer, index) => (
+        <div
+          key={offer.fieldId}
+          className="flex flex-col gap-3 rounded-lg border border-border p-3"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium">
+              {offerMode === "single"
+                ? "Price and stock"
+                : `Variant ${index + 1}`}
+              {index === 0 && offerMode === "variants" ? " · Default" : ""}
+            </p>
+            {offerMode === "variants" && rows.length > 1 ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="cursor-pointer"
+                disabled={disabled}
+                aria-label={`Remove variant ${index + 1}`}
+                onClick={() => remove(index)}
               >
-                <FieldLabel htmlFor={`offer-compare-${offer.key}`}>
-                  Compare-at price
-                </FieldLabel>
-                <Input
-                  id={`offer-compare-${offer.key}`}
-                  className="h-9"
-                  inputMode="decimal"
-                  value={offer.compareAtPrice}
-                  placeholder="Optional"
-                  aria-invalid={Boolean(fieldErrors?.compareAtPrice)}
-                  disabled={disabled}
-                  onChange={(event) =>
-                    updateRow(offer.key, { compareAtPrice: event.target.value })
-                  }
-                />
-                <FieldDescription>
-                  Leave blank if there is no higher price.
-                </FieldDescription>
-                <FieldError>{fieldErrors?.compareAtPrice}</FieldError>
-              </Field>
-              <Field data-invalid={Boolean(fieldErrors?.stock) || undefined}>
-                <FieldLabel htmlFor={`offer-stock-${offer.key}`}>
-                  Stock
-                </FieldLabel>
-                <Input
-                  id={`offer-stock-${offer.key}`}
-                  className="h-9"
-                  inputMode="numeric"
-                  value={offer.stock}
-                  aria-invalid={Boolean(fieldErrors?.stock)}
-                  disabled={disabled}
-                  onChange={(event) =>
-                    updateRow(offer.key, { stock: event.target.value })
-                  }
-                />
-                <FieldError>{fieldErrors?.stock}</FieldError>
-              </Field>
-            </div>
+                <Trash2 />
+              </Button>
+            ) : null}
           </div>
-        )
-      })}
 
-      {mode === "variants" ? (
+          {offerMode === "variants" ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {axes.map((assignment) => {
+                const id = assignment.attribute.id
+                const label = assignment.attribute.unit
+                  ? `${assignment.attribute.name} (${assignment.attribute.unit})`
+                  : assignment.attribute.name
+                const name =
+                  `offers.${index}.attributes.${id}` as FieldPath<ProductFormValues>
+
+                return (
+                  <Controller
+                    key={id}
+                    name={name}
+                    control={control}
+                    defaultValue={emptyAttributeDraft()}
+                    render={({ field, fieldState }) => (
+                      <Field data-invalid={fieldState.invalid}>
+                        <FieldLabel htmlFor={`offer-${offer.key}-${id}`}>
+                          {label}
+                        </FieldLabel>
+                        <VariantOptionControl
+                          id={`offer-${offer.key}-${id}`}
+                          assignment={assignment}
+                          draft={
+                            (field.value as AttributeDraft | undefined) ??
+                            emptyAttributeDraft()
+                          }
+                          error={fieldState.error?.message}
+                          disabled={disabled}
+                          onChange={(draft) => field.onChange(draft)}
+                        />
+                        {fieldState.invalid ? (
+                          <FieldError errors={[fieldState.error]} />
+                        ) : null}
+                      </Field>
+                    )}
+                  />
+                )
+              })}
+            </div>
+          ) : null}
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <OfferInput
+              control={control}
+              name={`offers.${index}.sku`}
+              id={`offer-sku-${offer.key}`}
+              label="SKU"
+              placeholder="SHIRT-RED-M"
+              required={required}
+              disabled={disabled}
+            />
+            <OfferInput
+              control={control}
+              name={`offers.${index}.price`}
+              id={`offer-price-${offer.key}`}
+              label="Price"
+              placeholder="0.00"
+              inputMode="decimal"
+              required={required}
+              disabled={disabled}
+            />
+            <OfferInput
+              control={control}
+              name={`offers.${index}.compareAtPrice`}
+              id={`offer-compare-${offer.key}`}
+              label="Compare-at price"
+              placeholder="Optional"
+              inputMode="decimal"
+              description="Leave blank if there is no higher price."
+              disabled={disabled}
+            />
+            <OfferInput
+              control={control}
+              name={`offers.${index}.stock`}
+              id={`offer-stock-${offer.key}`}
+              label="Stock"
+              placeholder="0"
+              inputMode="numeric"
+              required={required}
+              disabled={disabled}
+            />
+          </div>
+        </div>
+      ))}
+
+      {offerMode === "variants" ? (
         <Button
           type="button"
           variant="outline"
           className="cursor-pointer self-start"
-          disabled={disabled || offers.length >= 20}
-          onClick={() => onChange([...offers, emptyOffer()])}
+          disabled={disabled || fields.length >= 20}
+          onClick={() => append(emptyOffer())}
         >
           <Plus />
           Add variant
         </Button>
       ) : null}
     </div>
+  )
+}
+
+function OfferInput({
+  control,
+  name,
+  id,
+  label,
+  placeholder,
+  inputMode,
+  description,
+  required = false,
+  disabled,
+}: {
+  control: Control<ProductFormValues>
+  name: FieldPath<ProductFormValues>
+  id: string
+  label: string
+  placeholder?: string
+  inputMode?: "decimal" | "numeric"
+  description?: string
+  required?: boolean
+  disabled: boolean
+}) {
+  return (
+    <Controller
+      name={name}
+      control={control}
+      render={({ field, fieldState }) => (
+        <Field data-invalid={fieldState.invalid}>
+          <FieldLabel htmlFor={id}>
+            {label}
+            {required ? " *" : ""}
+          </FieldLabel>
+          <Input
+            id={id}
+            className="h-9"
+            inputMode={inputMode}
+            placeholder={placeholder}
+            required={required}
+            aria-required={required || undefined}
+            aria-invalid={fieldState.invalid}
+            disabled={disabled}
+            name={field.name}
+            ref={field.ref}
+            value={typeof field.value === "string" ? field.value : ""}
+            onBlur={field.onBlur}
+            onChange={field.onChange}
+          />
+          {description ? (
+            <FieldDescription>{description}</FieldDescription>
+          ) : null}
+          {fieldState.invalid ? (
+            <FieldError errors={[fieldState.error]} />
+          ) : null}
+        </Field>
+      )}
+    />
   )
 }
 

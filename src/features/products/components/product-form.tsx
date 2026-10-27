@@ -1,5 +1,6 @@
-import { useMemo, useState, type FormEvent } from "react"
-import type { ZodError } from "zod"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { Controller, useForm, useWatch } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -29,17 +30,10 @@ import {
   useUpdateProduct,
   useVendorStore,
 } from "../hooks"
-import {
-  buildOfferPayloads,
-  emptyOffer,
-  type OfferDraft,
-  type OfferFieldErrors,
-  type OfferMode,
-} from "../lib/create-offer"
+import { buildOfferPayloads, emptyOffer } from "../lib/create-offer"
 import {
   EMPTY_PRODUCT_FORM,
   buildAttributeInputs,
-  createProductFormSchema,
   draftsFromAttributes,
   formFromProduct,
   toCreatePayload,
@@ -49,7 +43,11 @@ import {
   type CreateProductFormValues,
   type ProductAttributeInput,
 } from "../lib/create-product"
-import type { Product } from "../types"
+import {
+  buildProductFormSchema,
+  type ProductFormValues,
+} from "../lib/product-form-schema"
+import type { CategoryAttribute, Product } from "../types"
 import { sellableCategories } from "../lib/sellable-categories"
 import { createVariant } from "../services"
 
@@ -70,8 +68,6 @@ type ProductField =
   | "status"
   | "images"
 
-type FieldErrors = Partial<Record<ProductField, string>>
-
 const PRODUCT_FIELDS = new Set<ProductField>([
   "name",
   "slug",
@@ -87,34 +83,8 @@ function isProductField(value: string): value is ProductField {
   return PRODUCT_FIELDS.has(value as ProductField)
 }
 
-function toFieldErrors(error: ZodError): FieldErrors {
-  const errors: FieldErrors = {}
-
-  for (const issue of error.issues) {
-    const key = issue.path[0]
-
-    if (typeof key === "string" && isProductField(key) && !errors[key]) {
-      errors[key] = issue.message
-    }
-  }
-
-  return errors
-}
-
-function zodFormMessage(error: ZodError) {
-  const messages = [
-    ...new Set(
-      error.issues
-        .map((issue) => issue.message)
-        .filter((message) => message.length > 0)
-    ),
-  ]
-
-  return messages.join("\n") || "Check the highlighted fields and try again."
-}
-
 function errorsFromApi(error: ApiError, attributes: ProductAttributeInput[]) {
-  const fields: FieldErrors = {}
+  const fields: Partial<Record<ProductField, string>> = {}
   const attributeErrors: Record<string, string> = {}
   let hasUnmapped = false
 
@@ -149,6 +119,17 @@ function errorsFromApi(error: ApiError, attributes: ProductAttributeInput[]) {
   return { fields, attributeErrors, message }
 }
 
+function defaultValues(product: Product | null): ProductFormValues {
+  const details = product ? formFromProduct(product) : EMPTY_PRODUCT_FORM
+
+  return {
+    ...details,
+    images: [],
+    offerMode: "single",
+    offers: [emptyOffer()],
+  }
+}
+
 type ProductFormProps = {
   product?: Product | null
   onCancel: () => void
@@ -167,26 +148,39 @@ export function ProductForm({
   const updateProduct = useUpdateProduct()
   const store = useVendorStore(true)
   const tree = useCategoryTree(true)
-  const [form, setForm] = useState<CreateProductFormValues>(() =>
-    product ? formFromProduct(product) : EMPTY_PRODUCT_FORM
-  )
-  const [images, setImages] = useState<string[]>([])
-  const [uploadingImage, setUploadingImage] = useState(false)
   const [drafts, setDrafts] = useState<Record<string, AttributeDraft>>(() =>
     product ? draftsFromAttributes(product.attributes) : {}
   )
-  const [errors, setErrors] = useState<FieldErrors>({})
   const [attributeErrors, setAttributeErrors] = useState<
     Record<string, string>
   >({})
-  const [formError, setFormError] = useState<string | null>(null)
-  const [offerMode, setOfferMode] = useState<OfferMode>("single")
-  const [offers, setOffers] = useState<OfferDraft[]>(() => [emptyOffer()])
-  const [offerErrors, setOfferErrors] = useState<
-    Record<string, OfferFieldErrors>
-  >({})
+  const [uploadingImage, setUploadingImage] = useState(false)
   const [savedWithoutApproval, setSavedWithoutApproval] = useState(false)
-  const attributes = useCategoryAttributes(form.categoryId)
+  const schemaOptions = useRef({
+    requireImages: !editing,
+    requireOffers: !editing && canSell,
+    assignments: [] as CategoryAttribute[],
+  })
+  const form = useForm<ProductFormValues>({
+    resolver: (values, context, options) =>
+      zodResolver(buildProductFormSchema(schemaOptions.current))(
+        values,
+        context,
+        options
+      ),
+    defaultValues: defaultValues(product),
+  })
+  const categoryId = useWatch({ control: form.control, name: "categoryId" })
+  const status = useWatch({ control: form.control, name: "status" })
+  const attributes = useCategoryAttributes(categoryId)
+
+  useEffect(() => {
+    schemaOptions.current = {
+      requireImages: !editing,
+      requireOffers: !editing && canSell,
+      assignments: attributes.data ?? [],
+    }
+  }, [attributes.data, canSell, editing])
   const variantAxes = useMemo(
     () => variantAssignments(attributes.data ?? []),
     [attributes.data]
@@ -201,7 +195,7 @@ export function ProductForm({
       ),
     [store.data?.categories, tree.data]
   )
-  const specsReady = !form.categoryId || attributes.isSuccess
+  const specsReady = !categoryId || attributes.isSuccess
   const categoryMessage = store.isError
     ? "Store categories could not be loaded."
     : tree.isError
@@ -214,106 +208,80 @@ export function ProductForm({
             !store.isLoading
           ? "No active categories are available for this store."
           : null
+  const rootError = form.formState.errors.root?.message
 
-  const setField =
-    <K extends keyof CreateProductFormValues>(key: K) =>
-    (value: CreateProductFormValues[K]) => {
-      setForm((current) => ({ ...current, [key]: value }))
+  const onCategoryChange = (value: string) => {
+    form.setValue("categoryId", value, {
+      shouldValidate: true,
+      shouldDirty: true,
+    })
+    form.setValue("offerMode", "single")
+    setDrafts({})
+    setAttributeErrors({})
+  }
 
-      if (key === "categoryId") {
-        setDrafts({})
-        setAttributeErrors({})
-        setOfferErrors({})
-        setOfferMode("single")
-      }
-
-      if (isProductField(key)) {
-        setErrors((current) => {
-          if (!current[key]) {
-            return current
-          }
-
-          const next = { ...current }
-          delete next[key]
-          return next
-        })
-      }
-    }
-
-  const submit = async (event?: FormEvent) => {
-    event?.preventDefault()
-
+  const onValid = async (values: ProductFormValues) => {
     if (uploadingImage || savedWithoutApproval) {
       return
     }
 
-    setFormError(null)
-
-    const parsed = createProductFormSchema.safeParse(form)
-    const nextErrors = parsed.success ? {} : toFieldErrors(parsed.error)
-    const imageError =
-      editing || images.length > 0 ? undefined : "Choose at least one image."
-
-    if (imageError) {
-      nextErrors.images = imageError
-    }
-
-    if (!attributes.isSuccess && form.categoryId) {
-      setErrors(nextErrors)
-      setFormError(
-        attributes.isError
+    if (!attributes.isSuccess && values.categoryId) {
+      form.setError("root", {
+        message: attributes.isError
           ? "Category details could not be loaded."
-          : "Category details are still loading."
-      )
+          : "Category details are still loading.",
+      })
       return
     }
 
     const built = buildAttributeInputs(attributes.data ?? [], drafts)
-    const sellingOnEdit =
-      offerMode === "variants" ||
-      offers.some(
-        (offer) => offer.sku.trim() !== "" || offer.price.trim() !== ""
-      )
-    const offer =
-      !parsed.success || !canSell || (editing && !sellingOnEdit)
-        ? null
-        : buildOfferPayloads(offerMode, offers, attributes.data ?? [])
 
-    if (
-      !parsed.success ||
-      imageError ||
-      Object.keys(built.errors).length > 0 ||
-      (offer && offer.message)
-    ) {
-      setErrors(nextErrors)
+    if (Object.keys(built.errors).length > 0) {
       setAttributeErrors(built.errors)
-      setOfferErrors(offer?.errors ?? {})
-      setFormError(
-        !parsed.success
-          ? zodFormMessage(parsed.error)
-          : imageError ||
-              offer?.message ||
-              "Check the highlighted fields and try again."
-      )
+      form.setError("root", {
+        message: "Check the highlighted fields and try again.",
+      })
       return
     }
 
     if (!editing && !canSell) {
-      setFormError(
-        "Price and stock are saved as variants. This account does not have permission to create variants."
-      )
+      form.setError("root", {
+        message:
+          "Price and stock are saved as variants. This account does not have permission to create variants.",
+      })
       return
     }
 
-    setErrors({})
+    const sellingOnEdit =
+      values.offerMode === "variants" ||
+      values.offers.some(
+        (offer) =>
+          offer.sku.trim() !== "" ||
+          offer.price.trim() !== "" ||
+          offer.compareAtPrice.trim() !== "" ||
+          offer.stock.trim() !== ""
+      )
+    const offer =
+      !canSell || (editing && !sellingOnEdit)
+        ? null
+        : buildOfferPayloads(
+            values.offerMode,
+            values.offers,
+            attributes.data ?? []
+          )
+
+    if (offer?.message) {
+      form.setError("root", { message: offer.message })
+      return
+    }
+
     setAttributeErrors({})
-    setOfferErrors({})
 
     try {
       if (editing && product) {
         await updateProduct.mutateAsync({
           productId: product.id,
-          payload: toUpdatePayload(parsed.data, built.inputs),
+          payload: toUpdatePayload(values, built.inputs),
         })
 
         if (offer) {
@@ -331,13 +299,14 @@ export function ProductForm({
       }
 
       const result = await createProduct.mutateAsync({
-        product: toCreatePayload(parsed.data, built.inputs, images),
+        product: toCreatePayload(values, built.inputs, values.images),
         variants: offer.payloads,
-        submitForApproval: parsed.data.status === "active",
+        submitForApproval: values.status === "active",
       })
+
       if (result.approvalWarning) {
         setSavedWithoutApproval(true)
-        setFormError(result.approvalWarning)
+        form.setError("root", { message: result.approvalWarning })
         return
       }
 
@@ -345,32 +314,64 @@ export function ProductForm({
     } catch (error) {
       if (error instanceof ApiError) {
         const next = errorsFromApi(error, built.inputs)
-        setErrors(next.fields)
+        form.clearErrors()
+
+        for (const [field, message] of Object.entries(next.fields)) {
+          if (message && isProductField(field)) {
+            form.setError(field, { message })
+          }
+        }
+
         setAttributeErrors(next.attributeErrors)
-        setFormError(next.message)
+
+        if (next.message) {
+          form.setError("root", { message: next.message })
+        }
+
         return
       }
 
-      setFormError(
-        editing
+      form.setError("root", {
+        message: editing
           ? "Could not update this product. Please try again."
-          : "Could not create this product. Please try again."
+          : "Could not create this product. Please try again.",
+      })
+    }
+  }
+
+  const onInvalid = () => {
+    const values = form.getValues()
+
+    if (!values.categoryId || attributes.isSuccess) {
+      setAttributeErrors(
+        buildAttributeInputs(attributes.data ?? [], drafts).errors
       )
     }
+
+    form.setError("root", {
+      message: "Check the highlighted fields and try again.",
+    })
   }
 
   return (
     <form
       className="flex w-full flex-col gap-4"
       noValidate
-      onSubmit={(event) => void submit(event)}
+      onSubmit={(event) => {
+        if (uploadingImage || savedWithoutApproval) {
+          event.preventDefault()
+          return
+        }
+
+        void form.handleSubmit(onValid, onInvalid)(event)
+      }}
     >
-      {formError ? (
+      {rootError ? (
         <p
           role="alert"
           className="rounded-xl border border-destructive/30 bg-card px-4 py-3 text-sm whitespace-pre-line text-destructive"
         >
-          {formError}
+          {rootError}
         </p>
       ) : null}
       <div className="overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-sm">
@@ -383,180 +384,227 @@ export function ProductForm({
             }
           >
             {editing ? null : (
-              <ProductImageField
-                images={images}
-                error={errors.images}
-                disabled={saving}
-                onPendingChange={setUploadingImage}
-                onChange={(next) => {
-                  setImages(next)
-                  setErrors((current) => {
-                    if (!current.images) {
-                      return current
-                    }
-
-                    const cleared = { ...current }
-                    delete cleared.images
-                    return cleared
-                  })
-                }}
+              <Controller
+                name="images"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <ProductImageField
+                    images={field.value}
+                    error={fieldState.error?.message}
+                    disabled={saving}
+                    required
+                    onPendingChange={setUploadingImage}
+                    onChange={(next) => {
+                      field.onChange(next)
+                      if (fieldState.error) {
+                        void form.trigger("images")
+                      }
+                    }}
+                  />
+                )}
               />
             )}
 
             <div className={editing ? "contents" : "grid gap-4 sm:grid-cols-2"}>
-              <Field data-invalid={Boolean(errors.name) || undefined}>
-                <FieldLabel htmlFor="product-name">Name</FieldLabel>
-                <Input
-                  id="product-name"
-                  className="h-9"
-                  value={form.name}
-                  aria-invalid={Boolean(errors.name)}
-                  disabled={busy}
-                  autoFocus
-                  onChange={(event) => setField("name")(event.target.value)}
-                />
-                <FieldError>{errors.name}</FieldError>
-              </Field>
-
-              <Field data-invalid={Boolean(errors.slug) || undefined}>
-                <FieldLabel htmlFor="product-slug">Slug</FieldLabel>
-                <Input
-                  id="product-slug"
-                  className="h-9"
-                  value={form.slug}
-                  placeholder="linen-shirt"
-                  spellCheck={false}
-                  aria-invalid={Boolean(errors.slug)}
-                  disabled={busy}
-                  onChange={(event) => setField("slug")(event.target.value)}
-                />
-                <FieldDescription>
-                  Leave blank to generate one from the name.
-                </FieldDescription>
-                <FieldError>{errors.slug}</FieldError>
-              </Field>
-
-              <Field data-invalid={Boolean(errors.categoryId) || undefined}>
-                <FieldLabel htmlFor="product-category">Category</FieldLabel>
-                <Select
-                  value={form.categoryId || undefined}
-                  disabled={
-                    busy ||
-                    store.isLoading ||
-                    tree.isLoading ||
-                    categories.length === 0
-                  }
-                  onValueChange={(value) => setField("categoryId")(value)}
-                >
-                  <SelectTrigger
-                    id="product-category"
-                    className="h-9! w-full cursor-pointer"
-                    aria-invalid={Boolean(errors.categoryId)}
-                  >
-                    <SelectValue
-                      placeholder={
-                        store.isLoading || tree.isLoading
-                          ? "Loading categories…"
-                          : "Choose a category"
-                      }
+              <Controller
+                name="name"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="product-name">Name *</FieldLabel>
+                    <Input
+                      {...field}
+                      id="product-name"
+                      className="h-9"
+                      required
+                      aria-required
+                      aria-invalid={fieldState.invalid}
+                      disabled={busy}
+                      autoFocus
                     />
-                  </SelectTrigger>
-                  <SelectContent
-                    position="popper"
-                    align="start"
-                    side="bottom"
-                    sideOffset={6}
-                    collisionPadding={16}
-                    className={selectContentClass}
-                  >
-                    {categories.map((category) => (
-                      <SelectItem
-                        key={category.id}
-                        value={category.id}
-                        className="cursor-pointer"
-                      >
-                        {category.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FieldDescription>
-                  {categoryMessage ??
-                    "Only categories this store sells can be used."}
-                </FieldDescription>
-                <FieldError>{errors.categoryId}</FieldError>
-              </Field>
+                    {fieldState.invalid ? (
+                      <FieldError errors={[fieldState.error]} />
+                    ) : null}
+                  </Field>
+                )}
+              />
 
-              <Field data-invalid={Boolean(errors.status) || undefined}>
-                <FieldLabel htmlFor="product-status">Status</FieldLabel>
-                <Select
-                  value={form.status}
-                  disabled={busy}
-                  onValueChange={(value) => {
-                    if (
-                      (PRODUCT_STATUSES as readonly string[]).includes(value)
-                    ) {
-                      setField("status")(
-                        value as CreateProductFormValues["status"]
-                      )
-                    }
-                  }}
-                >
-                  <SelectTrigger
-                    id="product-status"
-                    className="h-9! w-full cursor-pointer"
-                    aria-invalid={Boolean(errors.status)}
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent
-                    position="popper"
-                    align="start"
-                    side="bottom"
-                    sideOffset={6}
-                    collisionPadding={16}
-                    className={selectContentClass}
-                  >
-                    {PRODUCT_STATUSES.map((status) => (
-                      <SelectItem
-                        key={status}
-                        value={status}
-                        className="cursor-pointer"
-                      >
-                        {PRODUCT_STATUS_LABEL[status]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FieldDescription>
-                  Archived products stay out of the storefront.
-                </FieldDescription>
-                <FieldError>{errors.status}</FieldError>
-              </Field>
+              <Controller
+                name="slug"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="product-slug">Slug</FieldLabel>
+                    <Input
+                      {...field}
+                      id="product-slug"
+                      className="h-9"
+                      placeholder="linen-shirt"
+                      spellCheck={false}
+                      aria-invalid={fieldState.invalid}
+                      disabled={busy}
+                    />
+                    <FieldDescription>
+                      Leave blank to generate one from the name.
+                    </FieldDescription>
+                    {fieldState.invalid ? (
+                      <FieldError errors={[fieldState.error]} />
+                    ) : null}
+                  </Field>
+                )}
+              />
 
-              <Field data-invalid={Boolean(errors.tags) || undefined}>
-                <FieldLabel htmlFor="product-tags">Tags</FieldLabel>
-                <Input
-                  id="product-tags"
-                  className="h-9"
-                  value={form.tags}
-                  placeholder="linen, summer, shirt"
-                  aria-invalid={Boolean(errors.tags)}
-                  disabled={busy}
-                  onChange={(event) => setField("tags")(event.target.value)}
-                />
-                <FieldDescription>Separate tags with commas.</FieldDescription>
-                <FieldError>{errors.tags}</FieldError>
-              </Field>
+              <Controller
+                name="categoryId"
+                control={form.control}
+                render={({ fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="product-category">
+                      Category *
+                    </FieldLabel>
+                    <Select
+                      value={categoryId || undefined}
+                      disabled={
+                        busy ||
+                        store.isLoading ||
+                        tree.isLoading ||
+                        categories.length === 0
+                      }
+                      onValueChange={onCategoryChange}
+                    >
+                      <SelectTrigger
+                        id="product-category"
+                        className="h-9! w-full cursor-pointer"
+                        aria-required
+                        aria-invalid={fieldState.invalid}
+                      >
+                        <SelectValue
+                          placeholder={
+                            store.isLoading || tree.isLoading
+                              ? "Loading categories…"
+                              : "Choose a category"
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent
+                        position="popper"
+                        align="start"
+                        side="bottom"
+                        sideOffset={6}
+                        collisionPadding={16}
+                        className={selectContentClass}
+                      >
+                        {categories.map((category) => (
+                          <SelectItem
+                            key={category.id}
+                            value={category.id}
+                            className="cursor-pointer"
+                          >
+                            {category.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FieldDescription>
+                      {categoryMessage ??
+                        "Only categories this store sells can be used."}
+                    </FieldDescription>
+                    {fieldState.invalid ? (
+                      <FieldError errors={[fieldState.error]} />
+                    ) : null}
+                  </Field>
+                )}
+              />
+
+              <Controller
+                name="status"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="product-status">Status</FieldLabel>
+                    <Select
+                      value={field.value}
+                      disabled={busy}
+                      onValueChange={(value) => {
+                        if (
+                          (PRODUCT_STATUSES as readonly string[]).includes(
+                            value
+                          )
+                        ) {
+                          field.onChange(
+                            value as CreateProductFormValues["status"]
+                          )
+                        }
+                      }}
+                    >
+                      <SelectTrigger
+                        id="product-status"
+                        className="h-9! w-full cursor-pointer"
+                        aria-invalid={fieldState.invalid}
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent
+                        position="popper"
+                        align="start"
+                        side="bottom"
+                        sideOffset={6}
+                        collisionPadding={16}
+                        className={selectContentClass}
+                      >
+                        {PRODUCT_STATUSES.map((item) => (
+                          <SelectItem
+                            key={item}
+                            value={item}
+                            className="cursor-pointer"
+                          >
+                            {PRODUCT_STATUS_LABEL[item]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FieldDescription>
+                      Archived products stay out of the storefront.
+                    </FieldDescription>
+                    {fieldState.invalid ? (
+                      <FieldError errors={[fieldState.error]} />
+                    ) : null}
+                  </Field>
+                )}
+              />
+
+              <Controller
+                name="tags"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="product-tags">Tags</FieldLabel>
+                    <Input
+                      {...field}
+                      id="product-tags"
+                      className="h-9"
+                      placeholder="linen, summer, shirt"
+                      aria-invalid={fieldState.invalid}
+                      disabled={busy}
+                    />
+                    <FieldDescription>
+                      Separate tags with commas.
+                    </FieldDescription>
+                    {fieldState.invalid ? (
+                      <FieldError errors={[fieldState.error]} />
+                    ) : null}
+                  </Field>
+                )}
+              />
             </div>
           </div>
 
-          {form.categoryId && attributes.isLoading ? (
+          {categoryId && attributes.isLoading ? (
             <p className="text-sm text-muted-foreground sm:col-span-2">
               Loading category details…
             </p>
           ) : null}
-          {form.categoryId && attributes.isError ? (
+          {categoryId && attributes.isError ? (
             <p className="text-sm text-destructive sm:col-span-2" role="alert">
               Category details could not be loaded.
             </p>
@@ -585,60 +633,62 @@ export function ProductForm({
             />
           ) : null}
 
-          <Field
-            className="sm:col-span-2"
-            data-invalid={Boolean(errors.shortDescription) || undefined}
-          >
-            <FieldLabel htmlFor="product-short-description">
-              Short description
-            </FieldLabel>
-            <Textarea
-              id="product-short-description"
-              value={form.shortDescription}
-              aria-invalid={Boolean(errors.shortDescription)}
-              disabled={busy}
-              onChange={(event) =>
-                setField("shortDescription")(event.target.value)
-              }
-            />
-            <FieldError>{errors.shortDescription}</FieldError>
-          </Field>
+          <Controller
+            name="shortDescription"
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <Field
+                className="sm:col-span-2"
+                data-invalid={fieldState.invalid}
+              >
+                <FieldLabel htmlFor="product-short-description">
+                  Short description
+                </FieldLabel>
+                <Textarea
+                  {...field}
+                  id="product-short-description"
+                  aria-invalid={fieldState.invalid}
+                  disabled={busy}
+                />
+                {fieldState.invalid ? (
+                  <FieldError errors={[fieldState.error]} />
+                ) : null}
+              </Field>
+            )}
+          />
 
-          <Field
-            className="sm:col-span-2"
-            data-invalid={Boolean(errors.description) || undefined}
-          >
-            <FieldLabel htmlFor="product-description">Description</FieldLabel>
-            <Textarea
-              id="product-description"
-              value={form.description}
-              aria-invalid={Boolean(errors.description)}
-              disabled={busy}
-              onChange={(event) => setField("description")(event.target.value)}
-            />
-            <FieldError>{errors.description}</FieldError>
-          </Field>
+          <Controller
+            name="description"
+            control={form.control}
+            render={({ field, fieldState }) => (
+              <Field
+                className="sm:col-span-2"
+                data-invalid={fieldState.invalid}
+              >
+                <FieldLabel htmlFor="product-description">
+                  Description
+                </FieldLabel>
+                <Textarea
+                  {...field}
+                  id="product-description"
+                  aria-invalid={fieldState.invalid}
+                  disabled={busy}
+                />
+                {fieldState.invalid ? (
+                  <FieldError errors={[fieldState.error]} />
+                ) : null}
+              </Field>
+            )}
+          />
 
           {!canSell ? null : (
             <div className="sm:col-span-2">
               <ProductOfferFields
-                mode={offerMode}
-                offers={offers}
+                control={form.control}
                 assignments={attributes.data ?? []}
-                errors={offerErrors}
                 disabled={busy || savedWithoutApproval}
+                required={!editing}
                 canUseVariants={variantAxes.length > 0}
-                onModeChange={(mode) => {
-                  setOfferMode(mode)
-                  setOfferErrors({})
-                  setOffers((current) =>
-                    current.length > 0 ? current : [emptyOffer()]
-                  )
-                }}
-                onChange={(next) => {
-                  setOffers(next)
-                  setOfferErrors({})
-                }}
               />
             </div>
           )}
@@ -676,7 +726,7 @@ export function ProductForm({
                   : "Creating…"
                 : editing
                   ? "Save changes"
-                  : form.status === "active"
+                  : status === "active"
                     ? "Create and submit"
                     : "Create product"}
           </Button>
