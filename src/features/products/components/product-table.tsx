@@ -4,9 +4,8 @@ import {
   tableFeatures,
   useTable,
 } from "@tanstack/react-table"
-import { Ellipsis, Package, Pencil, Trash2 } from "lucide-react"
+import { Ellipsis, Eye, Package, Pencil, Trash2 } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -32,7 +31,7 @@ import {
   formatProductDate,
   formatVariantCount,
 } from "../lib/format"
-import type { Product, ProductApprovalStatus, ProductStatus } from "../types"
+import type { Product } from "../types"
 
 const features = tableFeatures({})
 const columnHelper = createColumnHelper<typeof features, Product>()
@@ -72,6 +71,7 @@ const columns = columnHelper.columns([
 type ProductTableProps = {
   products: Product[]
   isRefreshing: boolean
+  onView: (product: Product) => void
   onEdit: (product: Product) => void
   onDelete: (product: Product) => void
 }
@@ -87,6 +87,7 @@ const CELL_CLASS: Record<string, string> = {
 export function ProductTable({
   products,
   isRefreshing,
+  onView,
   onEdit,
   onDelete,
 }: ProductTableProps) {
@@ -99,13 +100,14 @@ export function ProductTable({
         cell: ({ row }) => (
           <ProductRowActions
             product={row.original}
+            onView={onView}
             onEdit={onEdit}
             onDelete={onDelete}
           />
         ),
       }),
     ],
-    [onDelete, onEdit]
+    [onDelete, onEdit, onView]
   )
   const table = useTable({
     features,
@@ -138,9 +140,31 @@ export function ProductTable({
         </TableHeader>
         <TableBody>
           {table.getRowModel().rows.map((row) => (
-            <TableRow key={row.id}>
+            <TableRow
+              key={row.id}
+              className="cursor-pointer"
+              tabIndex={0}
+              onClick={() => onView(row.original)}
+              onKeyDown={(event) => {
+                if (event.target !== event.currentTarget) {
+                  return
+                }
+
+                if (event.key === "Enter") {
+                  onView(row.original)
+                }
+              }}
+            >
               {row.getAllCells().map((cell) => (
-                <TableCell key={cell.id} className={CELL_CLASS[cell.column.id]}>
+                <TableCell
+                  key={cell.id}
+                  className={CELL_CLASS[cell.column.id]}
+                  onClick={
+                    cell.column.id === "actions"
+                      ? (event) => event.stopPropagation()
+                      : undefined
+                  }
+                >
                   <table.FlexRender cell={cell} />
                 </TableCell>
               ))}
@@ -154,10 +178,12 @@ export function ProductTable({
 
 function ProductRowActions({
   product,
+  onView,
   onEdit,
   onDelete,
 }: {
   product: Product
+  onView: (product: Product) => void
   onEdit: (product: Product) => void
   onDelete: (product: Product) => void
 }) {
@@ -176,7 +202,17 @@ function ProductRowActions({
           <Ellipsis />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent
+        align="end"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <DropdownMenuItem
+          className="cursor-pointer"
+          onSelect={() => onView(product)}
+        >
+          <Eye />
+          Details
+        </DropdownMenuItem>
         <DropdownMenuItem
           className="cursor-pointer"
           disabled={locked}
@@ -253,42 +289,15 @@ function StockCell({ product }: { product: Product }) {
   )
 }
 
-const STATUS_BADGE: Record<ProductStatus, string> = {
-  active: "border-transparent bg-brand-soft text-brand-text",
-  archived: "",
-}
-
-const APPROVAL_BADGE: Record<
-  ProductApprovalStatus,
-  { variant: "secondary" | "destructive" | "outline"; className?: string }
-> = {
-  pending: { variant: "outline" },
-  submitted: { variant: "secondary" },
-  approved: {
-    variant: "secondary",
-    className: "border-transparent bg-brand-soft text-brand-text",
-  },
-  rejected: { variant: "destructive" },
-}
-
 function StatusCell({ product }: { product: Product }) {
-  const approval = APPROVAL_BADGE[product.approvalStatus]
-
   return (
-    <div className="flex flex-wrap gap-1.5">
-      <Badge variant="secondary" className={STATUS_BADGE[product.status]}>
-        {PRODUCT_STATUS_LABEL[product.status]}
-      </Badge>
-      <Badge
-        variant={approval.variant}
-        className={approval.className}
-        title={product.reviewNote || undefined}
-      >
+    <div>
+      <p>{PRODUCT_STATUS_LABEL[product.status]}</p>
+      <p className="text-xs text-muted-foreground">
         {PRODUCT_APPROVAL_LABEL[product.approvalStatus]}
-      </Badge>
-      <Badge variant={product.isPublished ? "default" : "outline"}>
+        {" · "}
         {product.isPublished ? "Published" : "Unpublished"}
-      </Badge>
+      </p>
     </div>
   )
 }

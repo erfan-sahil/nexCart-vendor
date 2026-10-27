@@ -21,11 +21,13 @@ import {
 } from "./product-states"
 import { ProductCreateDialog } from "./product-create-dialog"
 import { ProductDeleteDialog } from "./product-delete-dialog"
+import { ProductDetailsDialog } from "./product-details-dialog"
 import { ProductTable } from "./product-table"
 import { ProductToolbar } from "./product-toolbar"
 
 export function ProductCatalog() {
   const [createOpen, setCreateOpen] = useState(false)
+  const [viewing, setViewing] = useState<Product | null>(null)
   const [editing, setEditing] = useState<Product | null>(null)
   const [deleting, setDeleting] = useState<Product | null>(null)
   const { query, updateQuery, clearFilters } = useProductListParams()
@@ -112,6 +114,7 @@ export function ProductCatalog() {
           <ProductTable
             products={page.items}
             isRefreshing={products.isFetching && !products.isPending}
+            onView={setViewing}
             onEdit={setEditing}
             onDelete={setDeleting}
           />
@@ -169,6 +172,10 @@ export function ProductCatalog() {
         product={editing}
         onClose={() => setEditing(null)}
         onCreated={() => setEditing(null)}
+      />
+      <ProductDetailsDialog
+        product={viewing}
+        onClose={() => setViewing(null)}
       />
       <ProductDeleteDialog
         product={deleting}
