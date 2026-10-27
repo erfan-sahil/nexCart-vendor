@@ -2,6 +2,7 @@ export {
   useCategoryAttributes,
   useCategoryTree,
   useCreateProduct,
+  useCreateProductWithOffer,
   useDeleteProduct,
   useUpdateProduct,
   useVendorStore,

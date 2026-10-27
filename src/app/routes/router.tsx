@@ -33,6 +33,8 @@ import { PayoutDetailsPage } from "@/pages/settings/payout-details/page"
 import { SecurityPage } from "@/pages/settings/security/page"
 import { ShippingReturnsPage } from "@/pages/settings/shipping-returns/page"
 import { InventoryPage } from "@/pages/store/inventory/page"
+import { EditProductPage } from "@/pages/store/products/edit/page"
+import { NewProductPage } from "@/pages/store/products/new/page"
 import { ProductsPage } from "@/pages/store/products/page"
 import { StoreProfilePage } from "@/pages/store/profile/page"
 import { ReviewsPage } from "@/pages/store/reviews/page"
@@ -109,6 +111,24 @@ export const router = createBrowserRouter([
         element: <VendorShell />,
         children: [
           ...childRoutes,
+          {
+            path: "store/products/new",
+            element: <NewProductPage />,
+            handle: {
+              title: "Add product",
+              description:
+                "Create a listing, choose its options, and send an active product for approval.",
+            } satisfies PageHandle,
+          },
+          {
+            path: "store/products/:productId/edit",
+            element: <EditProductPage />,
+            handle: {
+              title: "Edit product",
+              description:
+                "Update this listing. Existing images stay attached.",
+            } satisfies PageHandle,
+          },
           {
             path: "*",
             element: <NotFoundPage />,

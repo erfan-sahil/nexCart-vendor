@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from "react"
+import { useNavigate } from "react-router"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 
-import { DEFAULT_PRODUCT_SORT } from "../constants"
 import { useProductListParams, useVendorProducts } from "../hooks"
 import { formatResultRange } from "../lib/format"
 import { hasProductFilters } from "../lib/product-query"
@@ -19,16 +19,14 @@ import {
   ProductErrorState,
   ProductTableSkeleton,
 } from "./product-states"
-import { ProductCreateDialog } from "./product-create-dialog"
 import { ProductDeleteDialog } from "./product-delete-dialog"
 import { ProductDetailsDialog } from "./product-details-dialog"
 import { ProductTable } from "./product-table"
 import { ProductToolbar } from "./product-toolbar"
 
 export function ProductCatalog() {
-  const [createOpen, setCreateOpen] = useState(false)
+  const navigate = useNavigate()
   const [viewing, setViewing] = useState<Product | null>(null)
-  const [editing, setEditing] = useState<Product | null>(null)
   const [deleting, setDeleting] = useState<Product | null>(null)
   const { query, updateQuery, clearFilters } = useProductListParams()
   const products = useVendorProducts(query)
@@ -72,7 +70,7 @@ export function ProductCatalog() {
 
   return (
     <section
-      className="mx-auto flex w-full max-w-6xl flex-col gap-4"
+      className="flex w-full flex-col gap-4"
       aria-busy={products.isFetching}
     >
       <ProductToolbar
@@ -84,7 +82,7 @@ export function ProductCatalog() {
         onPublished={changePublished}
         onSort={changeSort}
         onClear={clearFilters}
-        onCreate={() => setCreateOpen(true)}
+        onCreate={() => navigate("/store/products/new")}
       />
 
       <div className="overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-sm">
@@ -115,7 +113,7 @@ export function ProductCatalog() {
             products={page.items}
             isRefreshing={products.isFetching && !products.isPending}
             onView={setViewing}
-            onEdit={setEditing}
+            onEdit={(product) => navigate(`/store/products/${product.id}/edit`)}
             onDelete={setDeleting}
           />
         ) : null}
@@ -162,17 +160,6 @@ export function ProductCatalog() {
         ) : null}
       </div>
 
-      <ProductCreateDialog
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        onCreated={() => updateQuery({ page: 1, sort: DEFAULT_PRODUCT_SORT })}
-      />
-      <ProductCreateDialog
-        open={editing !== null}
-        product={editing}
-        onClose={() => setEditing(null)}
-        onCreated={() => setEditing(null)}
-      />
       <ProductDetailsDialog
         product={viewing}
         onClose={() => setViewing(null)}

@@ -110,6 +110,49 @@ export async function updateProduct(
   }
 }
 
+export type CreateVariantPayload = {
+  sku: string
+  price: number
+  stock: number
+  compareAtPrice?: number
+  isDefault: boolean
+  simple?: boolean
+  attributes?: {
+    attributeId: string
+    text?: string
+    number?: number
+    optionIds?: string[]
+  }[]
+}
+
+export async function createVariant(
+  productId: string,
+  payload: CreateVariantPayload
+) {
+  try {
+    const { data } = await api.post<ApiSuccess<{ id: string }>>(
+      `/products/${productId}/variants`,
+      payload
+    )
+
+    return data.data
+  } catch (error) {
+    throw toApiError(error)
+  }
+}
+
+export async function submitProduct(productId: string) {
+  try {
+    const { data } = await api.post<ApiSuccess<Product>>(
+      `/products/${productId}/submit`
+    )
+
+    return data.data
+  } catch (error) {
+    throw toApiError(error)
+  }
+}
+
 export async function deleteProduct(productId: string) {
   try {
     const { data } = await api.delete<ApiSuccess<{ id: string }>>(

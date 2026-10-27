@@ -1,25 +1,14 @@
 import { useMemo, useState, type FormEvent } from "react"
-import { Package } from "lucide-react"
 import type { ZodError } from "zod"
 
 import { Button } from "@/components/ui/button"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import {
   Field,
   FieldDescription,
   FieldError,
-  FieldGroup,
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Select,
   SelectContent,
@@ -28,16 +17,25 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { canManageVariants } from "@/features/auth/lib/permissions"
+import { useAuthStore } from "@/features/auth/store"
 import { ApiError } from "@/lib/api/errors"
 
 import { PRODUCT_STATUS_LABEL, PRODUCT_STATUSES } from "../constants"
 import {
   useCategoryAttributes,
   useCategoryTree,
-  useCreateProduct,
+  useCreateProductWithOffer,
   useUpdateProduct,
   useVendorStore,
 } from "../hooks"
+import {
+  buildOfferPayloads,
+  emptyOffer,
+  type OfferDraft,
+  type OfferFieldErrors,
+  type OfferMode,
+} from "../lib/create-offer"
 import {
   EMPTY_PRODUCT_FORM,
   buildAttributeInputs,
@@ -46,15 +44,18 @@ import {
   formFromProduct,
   toCreatePayload,
   toUpdatePayload,
+  variantAssignments,
   type AttributeDraft,
   type CreateProductFormValues,
   type ProductAttributeInput,
 } from "../lib/create-product"
 import type { Product } from "../types"
 import { sellableCategories } from "../lib/sellable-categories"
+import { createVariant } from "../services"
 
 import { ProductAttributeFields } from "./product-attribute-fields"
 import { ProductImageField } from "./product-image-field"
+import { ProductOfferFields } from "./product-offer-fields"
 
 const selectContentClass =
   "pointer-events-auto z-[70] w-(--radix-select-trigger-width)"
@@ -148,43 +149,21 @@ function errorsFromApi(error: ApiError, attributes: ProductAttributeInput[]) {
   return { fields, attributeErrors, message }
 }
 
-type ProductCreateDialogProps = {
-  open: boolean
+type ProductFormProps = {
   product?: Product | null
-  onClose: () => void
-  onCreated: () => void
+  onCancel: () => void
+  onSaved: () => void
 }
 
-export function ProductCreateDialog({
-  open,
+export function ProductForm({
   product = null,
-  onClose,
-  onCreated,
-}: ProductCreateDialogProps) {
-  if (!open) {
-    return null
-  }
-
-  return (
-    <ProductCreateForm
-      product={product}
-      onClose={onClose}
-      onCreated={onCreated}
-    />
-  )
-}
-
-function ProductCreateForm({
-  product,
-  onClose,
-  onCreated,
-}: {
-  product: Product | null
-  onClose: () => void
-  onCreated: () => void
-}) {
+  onCancel,
+  onSaved,
+}: ProductFormProps) {
   const editing = product !== null
-  const createProduct = useCreateProduct()
+  const role = useAuthStore((state) => state.user?.role)
+  const canSell = canManageVariants(role)
+  const createProduct = useCreateProductWithOffer()
   const updateProduct = useUpdateProduct()
   const store = useVendorStore(true)
   const tree = useCategoryTree(true)
@@ -201,7 +180,17 @@ function ProductCreateForm({
     Record<string, string>
   >({})
   const [formError, setFormError] = useState<string | null>(null)
+  const [offerMode, setOfferMode] = useState<OfferMode>("single")
+  const [offers, setOffers] = useState<OfferDraft[]>(() => [emptyOffer()])
+  const [offerErrors, setOfferErrors] = useState<
+    Record<string, OfferFieldErrors>
+  >({})
+  const [savedWithoutApproval, setSavedWithoutApproval] = useState(false)
   const attributes = useCategoryAttributes(form.categoryId)
+  const variantAxes = useMemo(
+    () => variantAssignments(attributes.data ?? []),
+    [attributes.data]
+  )
   const saving = createProduct.isPending || updateProduct.isPending
   const busy = saving || uploadingImage
   const categories = useMemo(
@@ -234,6 +223,8 @@ function ProductCreateForm({
       if (key === "categoryId") {
         setDrafts({})
         setAttributeErrors({})
+        setOfferErrors({})
+        setOfferMode("single")
       }
 
       if (isProductField(key)) {
@@ -252,7 +243,7 @@ function ProductCreateForm({
   const submit = async (event?: FormEvent) => {
     event?.preventDefault()
 
-    if (uploadingImage) {
+    if (uploadingImage || savedWithoutApproval) {
       return
     }
 
@@ -278,20 +269,45 @@ function ProductCreateForm({
     }
 
     const built = buildAttributeInputs(attributes.data ?? [], drafts)
+    const sellingOnEdit =
+      offerMode === "variants" ||
+      offers.some(
+        (offer) => offer.sku.trim() !== "" || offer.price.trim() !== ""
+      )
+    const offer =
+      !parsed.success || !canSell || (editing && !sellingOnEdit)
+        ? null
+        : buildOfferPayloads(offerMode, offers, attributes.data ?? [])
 
-    if (!parsed.success || imageError || Object.keys(built.errors).length > 0) {
+    if (
+      !parsed.success ||
+      imageError ||
+      Object.keys(built.errors).length > 0 ||
+      (offer && offer.message)
+    ) {
       setErrors(nextErrors)
       setAttributeErrors(built.errors)
+      setOfferErrors(offer?.errors ?? {})
       setFormError(
-        parsed.success
-          ? imageError || "Check the highlighted fields and try again."
-          : zodFormMessage(parsed.error)
+        !parsed.success
+          ? zodFormMessage(parsed.error)
+          : imageError ||
+              offer?.message ||
+              "Check the highlighted fields and try again."
+      )
+      return
+    }
+
+    if (!editing && !canSell) {
+      setFormError(
+        "Price and stock are saved as variants. This account does not have permission to create variants."
       )
       return
     }
 
     setErrors({})
     setAttributeErrors({})
+    setOfferErrors({})
 
     try {
       if (editing && product) {
@@ -299,13 +315,33 @@ function ProductCreateForm({
           productId: product.id,
           payload: toUpdatePayload(parsed.data, built.inputs),
         })
-      } else {
-        await createProduct.mutateAsync(
-          toCreatePayload(parsed.data, built.inputs, images)
-        )
+
+        if (offer) {
+          for (const variant of offer.payloads) {
+            await createVariant(product.id, variant)
+          }
+        }
+
+        onSaved()
+        return
       }
-      onCreated()
-      onClose()
+
+      if (!offer) {
+        return
+      }
+
+      const result = await createProduct.mutateAsync({
+        product: toCreatePayload(parsed.data, built.inputs, images),
+        variants: offer.payloads,
+        submitForApproval: parsed.data.status === "active",
+      })
+      if (result.approvalWarning) {
+        setSavedWithoutApproval(true)
+        setFormError(result.approvalWarning)
+        return
+      }
+
+      onSaved()
     } catch (error) {
       if (error instanceof ApiError) {
         const next = errorsFromApi(error, built.inputs)
@@ -324,52 +360,50 @@ function ProductCreateForm({
   }
 
   return (
-    <Dialog
-      open
-      onOpenChange={(next) => {
-        if (!next && !busy) {
-          onClose()
-        }
-      }}
+    <form
+      className="flex w-full flex-col gap-4"
+      noValidate
+      onSubmit={(event) => void submit(event)}
     >
-      <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-xl">
-        <DialogHeader className="shrink-0 border-b border-brand/20 bg-brand-soft px-6 py-6 text-left">
-          <div className="flex items-center gap-4 pr-8">
-            <span className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-brand text-brand-foreground shadow-sm ring-4 ring-background">
-              <Package className="size-6" />
-            </span>
-            <div className="min-w-0">
-              <DialogTitle className="truncate text-lg font-semibold">
-                {editing ? "Edit product" : "New product"}
-              </DialogTitle>
-              <DialogDescription className="mt-1 text-foreground/70">
-                {editing
-                  ? "Update this listing. Existing images stay attached."
-                  : "Add a listing for this store. It stays pending until you submit it for approval."}
-              </DialogDescription>
-            </div>
-          </div>
-        </DialogHeader>
-
-        <form
-          className="flex min-h-0 flex-1 flex-col overflow-hidden"
-          noValidate
-          onSubmit={(event) => void submit(event)}
+      {formError ? (
+        <p
+          role="alert"
+          className="rounded-xl border border-destructive/30 bg-card px-4 py-3 text-sm whitespace-pre-line text-destructive"
         >
-          {formError ? (
-            <p
-              role="alert"
-              className="px-6 pt-4 text-sm whitespace-pre-line text-destructive"
-            >
-              {formError}
-            </p>
-          ) : null}
-          <ScrollArea
-            type="auto"
-            className="min-h-0 flex-1 overflow-hidden"
-            viewportClassName="h-auto max-h-[min(32rem,calc(100dvh-16rem))]"
+          {formError}
+        </p>
+      ) : null}
+      <div className="overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-sm">
+        <div className="grid gap-4 px-4 py-5 sm:grid-cols-2 sm:px-6">
+          <div
+            className={
+              editing
+                ? "contents"
+                : "grid items-start gap-6 sm:col-span-2 md:grid-cols-[22rem_minmax(0,1fr)]"
+            }
           >
-            <FieldGroup className="gap-4 px-6 py-5">
+            {editing ? null : (
+              <ProductImageField
+                images={images}
+                error={errors.images}
+                disabled={saving}
+                onPendingChange={setUploadingImage}
+                onChange={(next) => {
+                  setImages(next)
+                  setErrors((current) => {
+                    if (!current.images) {
+                      return current
+                    }
+
+                    const cleared = { ...current }
+                    delete cleared.images
+                    return cleared
+                  })
+                }}
+              />
+            )}
+
+            <div className={editing ? "contents" : "grid gap-4 sm:grid-cols-2"}>
               <Field data-invalid={Boolean(errors.name) || undefined}>
                 <FieldLabel htmlFor="product-name">Name</FieldLabel>
                 <Input
@@ -453,89 +487,6 @@ function ProductCreateForm({
                 <FieldError>{errors.categoryId}</FieldError>
               </Field>
 
-              {form.categoryId && attributes.isLoading ? (
-                <p className="text-sm text-muted-foreground">
-                  Loading category details…
-                </p>
-              ) : null}
-              {form.categoryId && attributes.isError ? (
-                <p className="text-sm text-destructive" role="alert">
-                  Category details could not be loaded.
-                </p>
-              ) : null}
-              {attributes.data ? (
-                <ProductAttributeFields
-                  assignments={attributes.data}
-                  drafts={drafts}
-                  errors={attributeErrors}
-                  disabled={busy}
-                  onChange={(attributeId, draft) => {
-                    setDrafts((current) => ({
-                      ...current,
-                      [attributeId]: draft,
-                    }))
-                    setAttributeErrors((current) => {
-                      if (!current[attributeId]) {
-                        return current
-                      }
-
-                      const next = { ...current }
-                      delete next[attributeId]
-                      return next
-                    })
-                  }}
-                />
-              ) : null}
-
-              <Field
-                data-invalid={Boolean(errors.shortDescription) || undefined}
-              >
-                <FieldLabel htmlFor="product-short-description">
-                  Short description
-                </FieldLabel>
-                <Textarea
-                  id="product-short-description"
-                  value={form.shortDescription}
-                  aria-invalid={Boolean(errors.shortDescription)}
-                  disabled={busy}
-                  onChange={(event) =>
-                    setField("shortDescription")(event.target.value)
-                  }
-                />
-                <FieldError>{errors.shortDescription}</FieldError>
-              </Field>
-
-              <Field data-invalid={Boolean(errors.description) || undefined}>
-                <FieldLabel htmlFor="product-description">
-                  Description
-                </FieldLabel>
-                <Textarea
-                  id="product-description"
-                  value={form.description}
-                  aria-invalid={Boolean(errors.description)}
-                  disabled={busy}
-                  onChange={(event) =>
-                    setField("description")(event.target.value)
-                  }
-                />
-                <FieldError>{errors.description}</FieldError>
-              </Field>
-
-              <Field data-invalid={Boolean(errors.tags) || undefined}>
-                <FieldLabel htmlFor="product-tags">Tags</FieldLabel>
-                <Input
-                  id="product-tags"
-                  className="h-9"
-                  value={form.tags}
-                  placeholder="linen, summer, shirt"
-                  aria-invalid={Boolean(errors.tags)}
-                  disabled={busy}
-                  onChange={(event) => setField("tags")(event.target.value)}
-                />
-                <FieldDescription>Separate tags with commas.</FieldDescription>
-                <FieldError>{errors.tags}</FieldError>
-              </Field>
-
               <Field data-invalid={Boolean(errors.status) || undefined}>
                 <FieldLabel htmlFor="product-status">Status</FieldLabel>
                 <Select
@@ -583,63 +534,154 @@ function ProductCreateForm({
                 <FieldError>{errors.status}</FieldError>
               </Field>
 
-              {editing ? null : (
-                <ProductImageField
-                  images={images}
-                  error={errors.images}
-                  disabled={saving}
-                  onPendingChange={setUploadingImage}
-                  onChange={(next) => {
-                    setImages(next)
-                    setErrors((current) => {
-                      if (!current.images) {
-                        return current
-                      }
-
-                      const cleared = { ...current }
-                      delete cleared.images
-                      return cleared
-                    })
-                  }}
+              <Field data-invalid={Boolean(errors.tags) || undefined}>
+                <FieldLabel htmlFor="product-tags">Tags</FieldLabel>
+                <Input
+                  id="product-tags"
+                  className="h-9"
+                  value={form.tags}
+                  placeholder="linen, summer, shirt"
+                  aria-invalid={Boolean(errors.tags)}
+                  disabled={busy}
+                  onChange={(event) => setField("tags")(event.target.value)}
                 />
-              )}
-            </FieldGroup>
-          </ScrollArea>
+                <FieldDescription>Separate tags with commas.</FieldDescription>
+                <FieldError>{errors.tags}</FieldError>
+              </Field>
+            </div>
+          </div>
 
-          <DialogFooter className="relative z-10 mx-0 mb-0 shrink-0 rounded-none border-border bg-card px-6 py-4">
-            <Button
-              type="button"
-              variant="outline"
-              className="cursor-pointer"
+          {form.categoryId && attributes.isLoading ? (
+            <p className="text-sm text-muted-foreground sm:col-span-2">
+              Loading category details…
+            </p>
+          ) : null}
+          {form.categoryId && attributes.isError ? (
+            <p className="text-sm text-destructive sm:col-span-2" role="alert">
+              Category details could not be loaded.
+            </p>
+          ) : null}
+          {attributes.data ? (
+            <ProductAttributeFields
+              assignments={attributes.data}
+              drafts={drafts}
+              errors={attributeErrors}
               disabled={busy}
-              onClick={onClose}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              className="relative z-10 cursor-pointer"
-              disabled={busy || !specsReady}
-              onPointerDown={(event) => event.stopPropagation()}
-              onClick={(event) => {
-                event.preventDefault()
-                event.stopPropagation()
-                void submit()
+              onChange={(attributeId, draft) => {
+                setDrafts((current) => ({
+                  ...current,
+                  [attributeId]: draft,
+                }))
+                setAttributeErrors((current) => {
+                  if (!current[attributeId]) {
+                    return current
+                  }
+
+                  const next = { ...current }
+                  delete next[attributeId]
+                  return next
+                })
               }}
-            >
-              {uploadingImage
-                ? "Uploading…"
-                : saving
-                  ? editing
-                    ? "Saving…"
-                    : "Creating…"
-                  : editing
-                    ? "Save changes"
+            />
+          ) : null}
+
+          <Field
+            className="sm:col-span-2"
+            data-invalid={Boolean(errors.shortDescription) || undefined}
+          >
+            <FieldLabel htmlFor="product-short-description">
+              Short description
+            </FieldLabel>
+            <Textarea
+              id="product-short-description"
+              value={form.shortDescription}
+              aria-invalid={Boolean(errors.shortDescription)}
+              disabled={busy}
+              onChange={(event) =>
+                setField("shortDescription")(event.target.value)
+              }
+            />
+            <FieldError>{errors.shortDescription}</FieldError>
+          </Field>
+
+          <Field
+            className="sm:col-span-2"
+            data-invalid={Boolean(errors.description) || undefined}
+          >
+            <FieldLabel htmlFor="product-description">Description</FieldLabel>
+            <Textarea
+              id="product-description"
+              value={form.description}
+              aria-invalid={Boolean(errors.description)}
+              disabled={busy}
+              onChange={(event) => setField("description")(event.target.value)}
+            />
+            <FieldError>{errors.description}</FieldError>
+          </Field>
+
+          {!canSell ? null : (
+            <div className="sm:col-span-2">
+              <ProductOfferFields
+                mode={offerMode}
+                offers={offers}
+                assignments={attributes.data ?? []}
+                errors={offerErrors}
+                disabled={busy || savedWithoutApproval}
+                canUseVariants={variantAxes.length > 0}
+                onModeChange={(mode) => {
+                  setOfferMode(mode)
+                  setOfferErrors({})
+                  setOffers((current) =>
+                    current.length > 0 ? current : [emptyOffer()]
+                  )
+                }}
+                onChange={(next) => {
+                  setOffers(next)
+                  setOfferErrors({})
+                }}
+              />
+            </div>
+          )}
+
+          {!editing && !canSell ? (
+            <p className="text-sm text-destructive sm:col-span-2">
+              Price and stock are saved as variants. This account does not have
+              permission to create variants.
+            </p>
+          ) : null}
+        </div>
+        <div className="flex flex-col-reverse gap-2 border-t border-border px-4 py-4 sm:flex-row sm:justify-end sm:px-6">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={busy}
+            onClick={onCancel}
+          >
+            {savedWithoutApproval ? "Back to products" : "Cancel"}
+          </Button>
+          <Button
+            type="submit"
+            disabled={
+              busy ||
+              savedWithoutApproval ||
+              !specsReady ||
+              (!editing && !canSell)
+            }
+          >
+            {uploadingImage
+              ? "Uploading…"
+              : saving
+                ? editing
+                  ? "Saving…"
+                  : "Creating…"
+                : editing
+                  ? "Save changes"
+                  : form.status === "active"
+                    ? "Create and submit"
                     : "Create product"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+          </Button>
+        </div>
+      </div>
+    </form>
   )
 }

@@ -37,7 +37,7 @@ function PageLink({
   return (
     <NavLink
       to={page.path}
-      end
+      end={page.path !== "/store/products"}
       title={page.label}
       onClick={onNavigate}
       className={({ isActive }) =>
@@ -124,7 +124,10 @@ export function VendorSidebar({
           }
 
           const activeChild = entry.children.find(
-            (page) => page.path === pathname
+            (page) =>
+              page.path === pathname ||
+              (page.path === "/store/products" &&
+                pathname.startsWith("/store/products/"))
           )
           const groupActive = Boolean(activeChild)
           const open = openGroups[entry.label] ?? groupActive

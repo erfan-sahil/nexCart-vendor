@@ -97,11 +97,14 @@ export function emptyAttributeDraft(): AttributeDraft {
   }
 }
 
-export function specAssignments(assignments: CategoryAttribute[]) {
+function orderedAssignments(
+  assignments: CategoryAttribute[],
+  role: "spec" | "variant"
+) {
   return assignments
     .filter(
       (assignment) =>
-        assignment.attribute.isActive && assignment.attribute.role === "spec"
+        assignment.attribute.isActive && assignment.attribute.role === role
     )
     .slice()
     .sort(
@@ -109,6 +112,14 @@ export function specAssignments(assignments: CategoryAttribute[]) {
         left.sortOrder - right.sortOrder ||
         left.attribute.name.localeCompare(right.attribute.name)
     )
+}
+
+export function specAssignments(assignments: CategoryAttribute[]) {
+  return orderedAssignments(assignments, "spec")
+}
+
+export function variantAssignments(assignments: CategoryAttribute[]) {
+  return orderedAssignments(assignments, "variant")
 }
 
 export function buildAttributeInputs(
