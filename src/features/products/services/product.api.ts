@@ -2,7 +2,10 @@ import { api } from "@/lib/api/client"
 import { ApiError, toApiError } from "@/lib/api/errors"
 import type { ApiSuccess, PaginationMeta } from "@/lib/api/types"
 
-import type { CreateProductPayload } from "../lib/create-product"
+import type {
+  CreateProductPayload,
+  UpdateProductPayload,
+} from "../lib/create-product"
 import type { Product, ProductListQuery, ProductPage } from "../types"
 
 function toListParams(query: ProductListQuery) {
@@ -84,6 +87,34 @@ export async function uploadProductImage(file: File) {
 export async function createProduct(payload: CreateProductPayload) {
   try {
     const { data } = await api.post<ApiSuccess<Product>>("/products", payload)
+
+    return data.data
+  } catch (error) {
+    throw toApiError(error)
+  }
+}
+
+export async function updateProduct(
+  productId: string,
+  payload: UpdateProductPayload
+) {
+  try {
+    const { data } = await api.patch<ApiSuccess<Product>>(
+      `/products/${productId}`,
+      payload
+    )
+
+    return data.data
+  } catch (error) {
+    throw toApiError(error)
+  }
+}
+
+export async function deleteProduct(productId: string) {
+  try {
+    const { data } = await api.delete<ApiSuccess<{ id: string }>>(
+      `/products/${productId}`
+    )
 
     return data.data
   } catch (error) {

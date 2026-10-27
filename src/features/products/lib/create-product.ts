@@ -1,7 +1,7 @@
 import { z } from "zod"
 
 import { PRODUCT_STATUSES } from "../constants"
-import type { CategoryAttribute } from "../types"
+import type { CategoryAttribute, Product, ProductAttribute } from "../types"
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
@@ -243,5 +243,71 @@ export function toCreatePayload(
     ...(tags.length > 0 ? { tags } : {}),
     ...(attributes.length > 0 ? { attributes } : {}),
     images,
+  }
+}
+
+export type UpdateProductPayload = {
+  name: string
+  categoryId: string
+  status: CreateProductFormValues["status"]
+  slug?: string
+  shortDescription: string
+  description: string
+  tags: string[]
+  attributes: ProductAttributeInput[]
+}
+
+export function formFromProduct(product: Product): CreateProductFormValues {
+  return {
+    name: product.name,
+    slug: product.slug,
+    shortDescription: product.shortDescription,
+    description: product.description,
+    categoryId: product.categoryId,
+    tags: product.tags.join(", "),
+    status: product.status,
+  }
+}
+
+export function draftsFromAttributes(attributes: ProductAttribute[]) {
+  const drafts: Record<string, AttributeDraft> = {}
+
+  for (const attribute of attributes) {
+    if (attribute.role !== "spec") {
+      continue
+    }
+
+    drafts[attribute.attributeId] = {
+      text: attribute.text ?? "",
+      number:
+        attribute.number === null || attribute.number === undefined
+          ? ""
+          : String(attribute.number),
+      boolean: attribute.boolean,
+      optionIds: attribute.options.map((option) => option.id),
+    }
+  }
+
+  return drafts
+}
+
+export function toUpdatePayload(
+  form: CreateProductFormValues,
+  attributes: ProductAttributeInput[]
+): UpdateProductPayload {
+  const tags = form.tags
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter((tag) => tag.length > 0)
+
+  return {
+    name: form.name.trim(),
+    categoryId: form.categoryId,
+    status: form.status,
+    shortDescription: form.shortDescription.trim(),
+    description: form.description.trim(),
+    tags,
+    attributes,
+    ...(form.slug.trim() ? { slug: form.slug.trim() } : {}),
   }
 }

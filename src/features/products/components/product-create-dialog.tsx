@@ -35,17 +35,22 @@ import {
   useCategoryAttributes,
   useCategoryTree,
   useCreateProduct,
+  useUpdateProduct,
   useVendorStore,
 } from "../hooks"
 import {
   EMPTY_PRODUCT_FORM,
   buildAttributeInputs,
   createProductFormSchema,
+  draftsFromAttributes,
+  formFromProduct,
   toCreatePayload,
+  toUpdatePayload,
   type AttributeDraft,
   type CreateProductFormValues,
   type ProductAttributeInput,
 } from "../lib/create-product"
+import type { Product } from "../types"
 import { sellableCategories } from "../lib/sellable-categories"
 
 import { ProductAttributeFields } from "./product-attribute-fields"
@@ -145,12 +150,14 @@ function errorsFromApi(error: ApiError, attributes: ProductAttributeInput[]) {
 
 type ProductCreateDialogProps = {
   open: boolean
+  product?: Product | null
   onClose: () => void
   onCreated: () => void
 }
 
 export function ProductCreateDialog({
   open,
+  product = null,
   onClose,
   onCreated,
 }: ProductCreateDialogProps) {
@@ -158,30 +165,44 @@ export function ProductCreateDialog({
     return null
   }
 
-  return <ProductCreateForm onClose={onClose} onCreated={onCreated} />
+  return (
+    <ProductCreateForm
+      product={product}
+      onClose={onClose}
+      onCreated={onCreated}
+    />
+  )
 }
 
 function ProductCreateForm({
+  product,
   onClose,
   onCreated,
 }: {
+  product: Product | null
   onClose: () => void
   onCreated: () => void
 }) {
+  const editing = product !== null
   const createProduct = useCreateProduct()
+  const updateProduct = useUpdateProduct()
   const store = useVendorStore(true)
   const tree = useCategoryTree(true)
-  const [form, setForm] = useState<CreateProductFormValues>(EMPTY_PRODUCT_FORM)
+  const [form, setForm] = useState<CreateProductFormValues>(() =>
+    product ? formFromProduct(product) : EMPTY_PRODUCT_FORM
+  )
   const [images, setImages] = useState<string[]>([])
   const [uploadingImage, setUploadingImage] = useState(false)
-  const [drafts, setDrafts] = useState<Record<string, AttributeDraft>>({})
+  const [drafts, setDrafts] = useState<Record<string, AttributeDraft>>(() =>
+    product ? draftsFromAttributes(product.attributes) : {}
+  )
   const [errors, setErrors] = useState<FieldErrors>({})
   const [attributeErrors, setAttributeErrors] = useState<
     Record<string, string>
   >({})
   const [formError, setFormError] = useState<string | null>(null)
   const attributes = useCategoryAttributes(form.categoryId)
-  const saving = createProduct.isPending
+  const saving = createProduct.isPending || updateProduct.isPending
   const busy = saving || uploadingImage
   const categories = useMemo(
     () =>
@@ -240,7 +261,7 @@ function ProductCreateForm({
     const parsed = createProductFormSchema.safeParse(form)
     const nextErrors = parsed.success ? {} : toFieldErrors(parsed.error)
     const imageError =
-      images.length === 0 ? "Choose at least one image." : undefined
+      editing || images.length > 0 ? undefined : "Choose at least one image."
 
     if (imageError) {
       nextErrors.images = imageError
@@ -273,9 +294,16 @@ function ProductCreateForm({
     setAttributeErrors({})
 
     try {
-      await createProduct.mutateAsync(
-        toCreatePayload(parsed.data, built.inputs, images)
-      )
+      if (editing && product) {
+        await updateProduct.mutateAsync({
+          productId: product.id,
+          payload: toUpdatePayload(parsed.data, built.inputs),
+        })
+      } else {
+        await createProduct.mutateAsync(
+          toCreatePayload(parsed.data, built.inputs, images)
+        )
+      }
       onCreated()
       onClose()
     } catch (error) {
@@ -287,7 +315,11 @@ function ProductCreateForm({
         return
       }
 
-      setFormError("Could not create this product. Please try again.")
+      setFormError(
+        editing
+          ? "Could not update this product. Please try again."
+          : "Could not create this product. Please try again."
+      )
     }
   }
 
@@ -308,11 +340,12 @@ function ProductCreateForm({
             </span>
             <div className="min-w-0">
               <DialogTitle className="truncate text-lg font-semibold">
-                New product
+                {editing ? "Edit product" : "New product"}
               </DialogTitle>
               <DialogDescription className="mt-1 text-foreground/70">
-                Add a listing for this store. It stays pending until you submit
-                it for approval.
+                {editing
+                  ? "Update this listing. Existing images stay attached."
+                  : "Add a listing for this store. It stays pending until you submit it for approval."}
               </DialogDescription>
             </div>
           </div>
@@ -550,24 +583,26 @@ function ProductCreateForm({
                 <FieldError>{errors.status}</FieldError>
               </Field>
 
-              <ProductImageField
-                images={images}
-                error={errors.images}
-                disabled={saving}
-                onPendingChange={setUploadingImage}
-                onChange={(next) => {
-                  setImages(next)
-                  setErrors((current) => {
-                    if (!current.images) {
-                      return current
-                    }
+              {editing ? null : (
+                <ProductImageField
+                  images={images}
+                  error={errors.images}
+                  disabled={saving}
+                  onPendingChange={setUploadingImage}
+                  onChange={(next) => {
+                    setImages(next)
+                    setErrors((current) => {
+                      if (!current.images) {
+                        return current
+                      }
 
-                    const cleared = { ...current }
-                    delete cleared.images
-                    return cleared
-                  })
-                }}
-              />
+                      const cleared = { ...current }
+                      delete cleared.images
+                      return cleared
+                    })
+                  }}
+                />
+              )}
             </FieldGroup>
           </ScrollArea>
 
@@ -595,8 +630,12 @@ function ProductCreateForm({
               {uploadingImage
                 ? "Uploading…"
                 : saving
-                  ? "Creating…"
-                  : "Create product"}
+                  ? editing
+                    ? "Saving…"
+                    : "Creating…"
+                  : editing
+                    ? "Save changes"
+                    : "Create product"}
             </Button>
           </DialogFooter>
         </form>

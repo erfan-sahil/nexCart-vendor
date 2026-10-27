@@ -6,8 +6,10 @@ export {
 export { catalogKeys } from "./catalog.query"
 export {
   createProduct,
+  deleteProduct,
   getProduct,
   listVendorProducts,
+  updateProduct,
   uploadProductImage,
 } from "./product.api"
 export { productKeys } from "./product.query"

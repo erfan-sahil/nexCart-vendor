@@ -1,12 +1,19 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import {
   createColumnHelper,
   tableFeatures,
   useTable,
 } from "@tanstack/react-table"
-import { Package } from "lucide-react"
+import { Ellipsis, Package, Pencil, Trash2 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Table,
   TableBody,
@@ -62,22 +69,47 @@ const columns = columnHelper.columns([
   }),
 ])
 
+type ProductTableProps = {
+  products: Product[]
+  isRefreshing: boolean
+  onEdit: (product: Product) => void
+  onDelete: (product: Product) => void
+}
+
 const CELL_CLASS: Record<string, string> = {
   product: "min-w-56",
   category: "text-muted-foreground",
   price: "whitespace-nowrap",
   updatedAt: "whitespace-nowrap text-muted-foreground",
+  actions: "w-12 text-end",
 }
 
-type ProductTableProps = {
-  products: Product[]
-  isRefreshing: boolean
-}
-
-export function ProductTable({ products, isRefreshing }: ProductTableProps) {
+export function ProductTable({
+  products,
+  isRefreshing,
+  onEdit,
+  onDelete,
+}: ProductTableProps) {
+  const columnsWithActions = useMemo(
+    () => [
+      ...columns,
+      columnHelper.display({
+        id: "actions",
+        header: () => <span className="sr-only">Actions</span>,
+        cell: ({ row }) => (
+          <ProductRowActions
+            product={row.original}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
+        ),
+      }),
+    ],
+    [onDelete, onEdit]
+  )
   const table = useTable({
     features,
-    columns,
+    columns: columnsWithActions,
     data: products,
     getRowId: (product) => product.id,
   })
@@ -117,6 +149,55 @@ export function ProductTable({ products, isRefreshing }: ProductTableProps) {
         </TableBody>
       </Table>
     </div>
+  )
+}
+
+function ProductRowActions({
+  product,
+  onEdit,
+  onDelete,
+}: {
+  product: Product
+  onEdit: (product: Product) => void
+  onDelete: (product: Product) => void
+}) {
+  const locked = product.approvalStatus === "submitted"
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className="cursor-pointer"
+          aria-label={`Actions for ${product.name}`}
+        >
+          <Ellipsis />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem
+          className="cursor-pointer"
+          disabled={locked}
+          title={
+            locked ? "This product is waiting for admin approval." : undefined
+          }
+          onSelect={() => onEdit(product)}
+        >
+          <Pencil />
+          Edit
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="cursor-pointer"
+          variant="destructive"
+          onSelect={() => onDelete(product)}
+        >
+          <Trash2 />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 

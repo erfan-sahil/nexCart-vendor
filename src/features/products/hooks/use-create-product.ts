@@ -1,13 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
-import type { CreateProductPayload } from "../lib/create-product"
+import type {
+  CreateProductPayload,
+  UpdateProductPayload,
+} from "../lib/create-product"
 import {
   catalogKeys,
   createProduct,
+  deleteProduct,
   getCategoryAttributes,
   getCategoryTree,
   getMyStore,
   productKeys,
+  updateProduct,
 } from "../services"
 
 export function useVendorStore(enabled: boolean) {
@@ -44,6 +49,36 @@ export function useCreateProduct() {
     mutationFn: (payload: CreateProductPayload) => createProduct(payload),
     onSuccess: (product) => {
       queryClient.setQueryData(productKeys.detail(product.id), product)
+      void queryClient.invalidateQueries({ queryKey: productKeys.lists() })
+    },
+  })
+}
+
+export function useUpdateProduct() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      productId,
+      payload,
+    }: {
+      productId: string
+      payload: UpdateProductPayload
+    }) => updateProduct(productId, payload),
+    onSuccess: (product) => {
+      queryClient.setQueryData(productKeys.detail(product.id), product)
+      void queryClient.invalidateQueries({ queryKey: productKeys.lists() })
+    },
+  })
+}
+
+export function useDeleteProduct() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (productId: string) => deleteProduct(productId),
+    onSuccess: (_result, productId) => {
+      queryClient.removeQueries({ queryKey: productKeys.detail(productId) })
       void queryClient.invalidateQueries({ queryKey: productKeys.lists() })
     },
   })

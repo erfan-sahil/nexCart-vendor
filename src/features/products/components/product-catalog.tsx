@@ -8,6 +8,7 @@ import { useProductListParams, useVendorProducts } from "../hooks"
 import { formatResultRange } from "../lib/format"
 import { hasProductFilters } from "../lib/product-query"
 import type {
+  Product,
   ProductApprovalStatus,
   ProductSort,
   ProductStatus,
@@ -19,11 +20,14 @@ import {
   ProductTableSkeleton,
 } from "./product-states"
 import { ProductCreateDialog } from "./product-create-dialog"
+import { ProductDeleteDialog } from "./product-delete-dialog"
 import { ProductTable } from "./product-table"
 import { ProductToolbar } from "./product-toolbar"
 
 export function ProductCatalog() {
   const [createOpen, setCreateOpen] = useState(false)
+  const [editing, setEditing] = useState<Product | null>(null)
+  const [deleting, setDeleting] = useState<Product | null>(null)
   const { query, updateQuery, clearFilters } = useProductListParams()
   const products = useVendorProducts(query)
   const page = products.data
@@ -108,6 +112,8 @@ export function ProductCatalog() {
           <ProductTable
             products={page.items}
             isRefreshing={products.isFetching && !products.isPending}
+            onEdit={setEditing}
+            onDelete={setDeleting}
           />
         ) : null}
 
@@ -157,6 +163,16 @@ export function ProductCatalog() {
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         onCreated={() => updateQuery({ page: 1, sort: DEFAULT_PRODUCT_SORT })}
+      />
+      <ProductCreateDialog
+        open={editing !== null}
+        product={editing}
+        onClose={() => setEditing(null)}
+        onCreated={() => setEditing(null)}
+      />
+      <ProductDeleteDialog
+        product={deleting}
+        onClose={() => setDeleting(null)}
       />
     </section>
   )
