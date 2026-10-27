@@ -188,8 +188,6 @@ function ProductRowActions({
   onEdit: (product: Product) => void
   onDelete: (product: Product) => void
 }) {
-  const locked = product.approvalStatus === "submitted"
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -216,10 +214,6 @@ function ProductRowActions({
         </DropdownMenuItem>
         <DropdownMenuItem
           className="cursor-pointer"
-          disabled={locked}
-          title={
-            locked ? "This product is waiting for admin approval." : undefined
-          }
           onSelect={() => onEdit(product)}
         >
           <Pencil />
