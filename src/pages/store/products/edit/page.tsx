@@ -1,7 +1,7 @@
 import { Navigate, useNavigate, useParams } from "react-router"
 
 import { Button } from "@/components/ui/button"
-import { useProduct } from "@/features/products"
+import { useProduct, useProductVariants } from "@/features/products"
 import { ProductForm } from "@/features/products/components/product-form"
 
 const productIdPattern = /^[a-f\d]{24}$/i
@@ -9,19 +9,21 @@ const productIdPattern = /^[a-f\d]{24}$/i
 export function EditProductPage() {
   const { productId = "" } = useParams()
   const navigate = useNavigate()
-  const product = useProduct(productIdPattern.test(productId) ? productId : "")
+  const id = productIdPattern.test(productId) ? productId : ""
+  const product = useProduct(id)
+  const variants = useProductVariants(id, id.length > 0)
 
-  if (!productIdPattern.test(productId)) {
+  if (!id) {
     return <Navigate to="/store/products" replace />
   }
 
-  if (product.isPending) {
+  if (product.isPending || variants.isPending) {
     return (
       <p className="w-full text-sm text-muted-foreground">Loading product…</p>
     )
   }
 
-  if (product.isError || !product.data) {
+  if (product.isError || !product.data || variants.isError || !variants.data) {
     return (
       <section className="flex w-full flex-col items-start gap-3 rounded-xl border border-border bg-card px-4 py-8 text-card-foreground shadow-sm sm:px-5">
         <p role="alert" className="text-sm text-destructive">
@@ -41,6 +43,7 @@ export function EditProductPage() {
   return (
     <ProductForm
       product={product.data}
+      variants={variants.data.items}
       onCancel={() => navigate("/store/products")}
       onSaved={() => navigate("/store/products")}
     />

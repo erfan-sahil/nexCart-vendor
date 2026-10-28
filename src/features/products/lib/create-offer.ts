@@ -1,5 +1,5 @@
 import type { CreateVariantPayload } from "../services"
-import type { CategoryAttribute } from "../types"
+import type { CategoryAttribute, ProductVariant } from "../types"
 import {
   emptyAttributeDraft,
   variantAssignments,
@@ -32,6 +32,8 @@ export type OfferFieldErrors = {
   attributes?: Record<string, string>
 }
 
+const storedVariantIdPattern = /^[a-f\d]{24}$/i
+
 export function emptyOffer(): OfferDraft {
   return {
     key: crypto.randomUUID(),
@@ -41,6 +43,55 @@ export function emptyOffer(): OfferDraft {
     discountValue: "",
     stock: "",
     attributes: {},
+  }
+}
+
+export function isStoredVariantId(value: string) {
+  return storedVariantIdPattern.test(value)
+}
+
+export function offersFromVariants(variants: ProductVariant[]) {
+  if (variants.length === 0) {
+    return {
+      offerMode: "single" as const,
+      offers: [emptyOffer()],
+    }
+  }
+
+  const ordered = variants.slice().sort((left, right) => {
+    if (left.isDefault !== right.isDefault) {
+      return left.isDefault ? -1 : 1
+    }
+
+    return left.sku.localeCompare(right.sku)
+  })
+  const hasOptions = ordered.some((variant) => variant.attributes.length > 0)
+
+  return {
+    offerMode:
+      hasOptions || ordered.length > 1
+        ? ("variants" as const)
+        : ("single" as const),
+    offers: ordered.map((variant) => ({
+      key: variant.id,
+      sku: variant.sku,
+      price: String(variant.price),
+      discountType: variant.discountType ?? "",
+      discountValue:
+        variant.discountValue === null ? "" : String(variant.discountValue),
+      stock: String(variant.stock),
+      attributes: Object.fromEntries(
+        variant.attributes.map((attribute) => [
+          attribute.attributeId,
+          {
+            text: attribute.text ?? "",
+            number: attribute.number === null ? "" : String(attribute.number),
+            boolean: attribute.boolean,
+            optionIds: attribute.options.map((option) => option.id),
+          },
+        ])
+      ),
+    })),
   }
 }
 
@@ -147,7 +198,8 @@ export function buildOfferPayloads(
       price,
       stock,
       isDefault: index === 0,
-      ...(discount.discount ? discount.discount : {}),
+      discountType: discount.discount?.discountType ?? null,
+      discountValue: discount.discount?.discountValue ?? null,
       ...(mode === "single" ? { simple: true } : { attributes }),
     })
   })

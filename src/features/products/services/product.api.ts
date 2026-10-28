@@ -120,8 +120,8 @@ export type CreateVariantPayload = {
   sku: string
   price: number
   stock: number
-  discountType?: "percent" | "amount"
-  discountValue?: number
+  discountType?: "percent" | "amount" | null
+  discountValue?: number | null
   isDefault: boolean
   simple?: boolean
   attributes?: {
@@ -132,6 +132,8 @@ export type CreateVariantPayload = {
   }[]
 }
 
+export type UpdateVariantPayload = Omit<CreateVariantPayload, "simple">
+
 export async function createVariant(
   productId: string,
   payload: CreateVariantPayload
@@ -140,6 +142,35 @@ export async function createVariant(
     const { data } = await api.post<ApiSuccess<{ id: string }>>(
       `/products/${productId}/variants`,
       payload
+    )
+
+    return data.data
+  } catch (error) {
+    throw toApiError(error)
+  }
+}
+
+export async function updateVariant(
+  productId: string,
+  variantId: string,
+  payload: UpdateVariantPayload
+) {
+  try {
+    const { data } = await api.patch<ApiSuccess<ProductVariant>>(
+      `/products/${productId}/variants/${variantId}`,
+      payload
+    )
+
+    return data.data
+  } catch (error) {
+    throw toApiError(error)
+  }
+}
+
+export async function deleteVariant(productId: string, variantId: string) {
+  try {
+    const { data } = await api.delete<ApiSuccess<{ id: string }>>(
+      `/products/${productId}/variants/${variantId}`
     )
 
     return data.data

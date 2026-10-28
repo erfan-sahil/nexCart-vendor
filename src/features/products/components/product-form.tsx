@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useQueryClient } from "@tanstack/react-query"
 import { Controller, useForm, useWatch } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"
@@ -30,7 +31,12 @@ import {
   useUpdateProduct,
   useVendorStore,
 } from "../hooks"
-import { buildOfferPayloads, emptyOffer } from "../lib/create-offer"
+import {
+  buildOfferPayloads,
+  emptyOffer,
+  isStoredVariantId,
+  offersFromVariants,
+} from "../lib/create-offer"
 import {
   EMPTY_PRODUCT_FORM,
   buildAttributeInputs,
@@ -47,9 +53,15 @@ import {
   buildProductFormSchema,
   type ProductFormValues,
 } from "../lib/product-form-schema"
-import type { CategoryAttribute, Product } from "../types"
+import type { CategoryAttribute, Product, ProductVariant } from "../types"
 import { sellableCategories } from "../lib/sellable-categories"
-import { createVariant } from "../services"
+import {
+  createVariant,
+  deleteVariant,
+  productKeys,
+  updateVariant,
+  type CreateVariantPayload,
+} from "../services"
 
 import { ProductAttributeFields } from "./product-attribute-fields"
 import { ProductImageField } from "./product-image-field"
@@ -119,29 +131,49 @@ function errorsFromApi(error: ApiError, attributes: ProductAttributeInput[]) {
   return { fields, attributeErrors, message }
 }
 
-function defaultValues(product: Product | null): ProductFormValues {
+function defaultValues(
+  product: Product | null,
+  variants: ProductVariant[]
+): ProductFormValues {
   const details = product ? formFromProduct(product) : EMPTY_PRODUCT_FORM
+  const selling = product ? offersFromVariants(variants) : null
 
   return {
     ...details,
     images: [],
-    offerMode: "single",
-    offers: [emptyOffer()],
+    offerMode: selling?.offerMode ?? "single",
+    offers: selling?.offers ?? [emptyOffer()],
+  }
+}
+
+function toVariantUpdate({
+  simple,
+  isDefault,
+  attributes,
+  ...rest
+}: CreateVariantPayload) {
+  return {
+    ...rest,
+    ...(simple ? {} : { attributes }),
+    ...(isDefault ? { isDefault: true } : {}),
   }
 }
 
 type ProductFormProps = {
   product?: Product | null
+  variants?: ProductVariant[]
   onCancel: () => void
   onSaved: () => void
 }
 
 export function ProductForm({
   product = null,
+  variants = [],
   onCancel,
   onSaved,
 }: ProductFormProps) {
   const editing = product !== null
+  const queryClient = useQueryClient()
   const role = useAuthStore((state) => state.user?.role)
   const canSell = canManageVariants(role)
   const createProduct = useCreateProductWithOffer()
@@ -168,7 +200,7 @@ export function ProductForm({
         context,
         options
       ),
-    defaultValues: defaultValues(product),
+    defaultValues: defaultValues(product, variants),
   })
   const categoryId = useWatch({ control: form.control, name: "categoryId" })
   const status = useWatch({ control: form.control, name: "status" })
@@ -286,9 +318,36 @@ export function ProductForm({
         })
 
         if (offer) {
-          for (const variant of offer.payloads) {
-            await createVariant(product.id, variant)
+          const rows =
+            values.offerMode === "single"
+              ? values.offers.slice(0, 1)
+              : values.offers
+          const kept = new Set<string>()
+
+          for (const [index, variant] of offer.payloads.entries()) {
+            const row = rows[index]
+
+            if (!row) {
+              continue
+            }
+
+            if (isStoredVariantId(row.key)) {
+              kept.add(row.key)
+              await updateVariant(product.id, row.key, toVariantUpdate(variant))
+            } else {
+              await createVariant(product.id, variant)
+            }
           }
+
+          for (const existing of variants) {
+            if (!kept.has(existing.id)) {
+              await deleteVariant(product.id, existing.id)
+            }
+          }
+
+          await queryClient.invalidateQueries({
+            queryKey: productKeys.detail(product.id),
+          })
         }
 
         onSaved()
