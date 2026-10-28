@@ -123,6 +123,15 @@ export function buildOfferPayloads(
     }
   }
 
+  if (mode === "variants" && axes.length === 0) {
+    return {
+      payloads,
+      errors,
+      message:
+        "This category has no variant options, so variants cannot be created. Contact an administrator.",
+    }
+  }
+
   rows.forEach((offer, index) => {
     const fieldErrors: OfferFieldErrors = {}
     const sku = offer.sku.trim().toUpperCase()
@@ -344,7 +353,6 @@ function readVariantAttributes(
   const attributeErrors: Record<string, string> = {}
 
   if (axes.length === 0) {
-    fieldErrors.sku = fieldErrors.sku ?? "This category has no variant options."
     return attributes
   }
 

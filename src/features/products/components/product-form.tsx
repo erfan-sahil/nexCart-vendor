@@ -749,6 +749,11 @@ export function ProductForm({
                 disabled={busy || savedWithoutApproval}
                 required={!editing}
                 canUseVariants={variantAxes.length > 0}
+                missingVariantOptions={
+                  Boolean(categoryId) &&
+                  attributes.isSuccess &&
+                  variantAxes.length === 0
+                }
               />
             </div>
           )}

@@ -43,6 +43,7 @@ type ProductOfferFieldsProps = {
   disabled?: boolean
   required?: boolean
   canUseVariants: boolean
+  missingVariantOptions?: boolean
 }
 
 export function ProductOfferFields({
@@ -51,6 +52,7 @@ export function ProductOfferFields({
   disabled = false,
   required = false,
   canUseVariants,
+  missingVariantOptions = false,
 }: ProductOfferFieldsProps) {
   const axes = variantAssignments(assignments)
   const offerMode = useWatch({ control, name: "offerMode" })
@@ -89,12 +91,14 @@ export function ProductOfferFields({
               <ModeChoice
                 name="offer-mode"
                 checked={field.value === "variants"}
-                disabled={disabled}
+                disabled={disabled || !canUseVariants}
                 title="Has variants"
                 description={
                   canUseVariants
                     ? "A row for each option, such as size or color."
-                    : "Choose this to add a row for each option, such as size or color."
+                    : missingVariantOptions
+                      ? "This category has no variant options."
+                      : "Choose a category to see if variants are available."
                 }
                 onSelect={() => field.onChange("variants")}
               />
@@ -103,16 +107,16 @@ export function ProductOfferFields({
         />
       </div>
 
-      {offersMessage ? (
-        <p className="text-sm text-destructive" role="alert">
-          {offersMessage}
+      {missingVariantOptions ? (
+        <p className="text-sm text-muted-foreground">
+          This category has no variant options, so variants cannot be created.
+          Contact an administrator.
         </p>
       ) : null}
 
-      {offerMode === "variants" && axes.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          This category has no variant attributes yet. Assign options such as
-          size or color to the category, then set them on each variant.
+      {offersMessage ? (
+        <p className="text-sm text-destructive" role="alert">
+          {offersMessage}
         </p>
       ) : null}
 
