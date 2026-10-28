@@ -9,12 +9,9 @@ import {
   useInventoryVariants,
 } from "../hooks"
 import type {
-  CatalogStatus,
   InventoryProductSort,
   InventoryVariantSort,
   InventoryView,
-  ProductApprovalStatus,
-  StockLevel,
 } from "../types"
 
 import { InventoryProductDialog } from "./inventory-product-dialog"
@@ -63,24 +60,6 @@ export function InventoryCatalog() {
       }),
     [query.approvalStatus, updateQuery]
   )
-  const changeStockLevel = useCallback(
-    (stockLevel: StockLevel | undefined) =>
-      updateQuery({ stockLevel, page: 1 }),
-    [updateQuery]
-  )
-  const changeStatus = useCallback(
-    (status: CatalogStatus | undefined) => updateQuery({ status, page: 1 }),
-    [updateQuery]
-  )
-  const changeApproval = useCallback(
-    (approvalStatus: ProductApprovalStatus | undefined) =>
-      updateQuery({ approvalStatus, page: 1 }),
-    [updateQuery]
-  )
-  const changeLowStockAt = useCallback(
-    (lowStockAt: number) => updateQuery({ lowStockAt, page: 1 }),
-    [updateQuery]
-  )
   const changeSort = useCallback(
     (sort: InventoryProductSort | InventoryVariantSort) =>
       updateQuery({ sort, page: 1 }),
@@ -99,8 +78,6 @@ export function InventoryCatalog() {
         summary={summary.data}
         isPending={summary.isPending}
         error={summary.error}
-        stockLevel={query.stockLevel}
-        onStockLevel={changeStockLevel}
         onRetry={() => {
           void summary.refetch()
         }}
@@ -111,10 +88,6 @@ export function InventoryCatalog() {
         total={page?.pagination.total}
         onSearch={changeSearch}
         onView={changeView}
-        onStockLevel={changeStockLevel}
-        onStatus={changeStatus}
-        onApprovalStatus={changeApproval}
-        onLowStockAt={changeLowStockAt}
         onSort={changeSort}
         onClear={clearFilters}
       />

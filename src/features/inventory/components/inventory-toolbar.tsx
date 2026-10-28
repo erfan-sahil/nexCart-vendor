@@ -21,81 +21,29 @@ import {
 import {
   INVENTORY_PRODUCT_SORTS,
   INVENTORY_VARIANT_SORTS,
-  LOW_STOCK_PRESETS,
-  PRODUCT_APPROVAL_LABEL,
-  PRODUCT_APPROVAL_STATUSES,
   PRODUCT_SORT_LABEL,
-  PRODUCT_STATUS_LABEL,
-  PRODUCT_STATUSES,
-  STOCK_LEVEL_LABEL,
-  STOCK_LEVELS,
   VARIANT_SORT_LABEL,
 } from "../constants"
 import { hasInventoryFilters } from "../lib/inventory-query"
 import type {
-  CatalogStatus,
   InventoryListParams,
   InventoryProductSort,
   InventoryVariantSort,
   InventoryView,
-  ProductApprovalStatus,
-  StockLevel,
 } from "../types"
-
-const ALL = "all"
 
 type FilterOption = {
   value: string
   label: string
 }
 
-const STOCK_OPTIONS: FilterOption[] = [
-  { value: ALL, label: "All levels" },
-  ...STOCK_LEVELS.map((level) => ({
-    value: level,
-    label: STOCK_LEVEL_LABEL[level],
-  })),
-]
-
-const STATUS_OPTIONS: FilterOption[] = [
-  { value: ALL, label: "All statuses" },
-  ...PRODUCT_STATUSES.map((status) => ({
-    value: status,
-    label: PRODUCT_STATUS_LABEL[status],
-  })),
-]
-
-const APPROVAL_OPTIONS: FilterOption[] = [
-  { value: ALL, label: "All approvals" },
-  ...PRODUCT_APPROVAL_STATUSES.map((status) => ({
-    value: status,
-    label: PRODUCT_APPROVAL_LABEL[status],
-  })),
-]
-
 type InventoryToolbarProps = {
   query: InventoryListParams
   total: number | undefined
   onSearch: (search: string | undefined) => void
   onView: (view: InventoryView) => void
-  onStockLevel: (stockLevel: StockLevel | undefined) => void
-  onStatus: (status: CatalogStatus | undefined) => void
-  onApprovalStatus: (status: ProductApprovalStatus | undefined) => void
-  onLowStockAt: (lowStockAt: number) => void
   onSort: (sort: InventoryProductSort | InventoryVariantSort) => void
   onClear: () => void
-}
-
-function isStockLevel(value: string): value is StockLevel {
-  return (STOCK_LEVELS as readonly string[]).includes(value)
-}
-
-function isStatus(value: string): value is CatalogStatus {
-  return (PRODUCT_STATUSES as readonly string[]).includes(value)
-}
-
-function isApprovalStatus(value: string): value is ProductApprovalStatus {
-  return (PRODUCT_APPROVAL_STATUSES as readonly string[]).includes(value)
 }
 
 function isProductSort(value: string): value is InventoryProductSort {
@@ -115,10 +63,6 @@ export function InventoryToolbar({
   total,
   onSearch,
   onView,
-  onStockLevel,
-  onStatus,
-  onApprovalStatus,
-  onLowStockAt,
   onSort,
   onClear,
 }: InventoryToolbarProps) {
@@ -140,17 +84,6 @@ export function InventoryToolbar({
           value: sort,
           label: VARIANT_SORT_LABEL[sort],
         }))
-  const thresholds = LOW_STOCK_PRESETS.includes(
-    query.lowStockAt as (typeof LOW_STOCK_PRESETS)[number]
-  )
-    ? LOW_STOCK_PRESETS
-    : [...LOW_STOCK_PRESETS, query.lowStockAt].sort(
-        (left, right) => left - right
-      )
-  const thresholdOptions: FilterOption[] = thresholds.map((value) => ({
-    value: String(value),
-    label: `${value} units`,
-  }))
 
   if (querySearch !== trackedSearch) {
     setTrackedSearch(querySearch)
@@ -175,53 +108,29 @@ export function InventoryToolbar({
   }, [onSearch, querySearch, search])
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 text-card-foreground shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex rounded-lg border border-border p-0.5">
-            <Button
-              type="button"
-              size="sm"
-              variant={query.view === "products" ? "secondary" : "ghost"}
-              aria-pressed={query.view === "products"}
-              onClick={() => onView("products")}
-            >
-              Products
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant={query.view === "variants" ? "secondary" : "ghost"}
-              aria-pressed={query.view === "variants"}
-              onClick={() => onView("variants")}
-            >
-              Variants
-            </Button>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {total === undefined
-              ? "Store inventory"
-              : `${total} ${total === 1 ? noun : `${noun}s`}`}
-          </p>
-        </div>
-        {filtersActive ? (
+    <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 text-card-foreground shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex w-fit rounded-lg border border-border p-0.5">
           <Button
             type="button"
-            variant="ghost"
             size="sm"
-            onClick={() => {
-              setDraft("")
-              onClear()
-            }}
+            variant={query.view === "products" ? "secondary" : "ghost"}
+            aria-pressed={query.view === "products"}
+            onClick={() => onView("products")}
           >
-            <X />
-            Clear filters
+            Products
           </Button>
-        ) : null}
-      </div>
-
-      <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
-        <InputGroup className="lg:max-w-sm lg:flex-1">
+          <Button
+            type="button"
+            size="sm"
+            variant={query.view === "variants" ? "secondary" : "ghost"}
+            aria-pressed={query.view === "variants"}
+            onClick={() => onView("variants")}
+          >
+            Variants
+          </Button>
+        </div>
+        <InputGroup className="sm:max-w-sm sm:flex-1">
           <InputGroupAddon>
             <Search />
           </InputGroupAddon>
@@ -250,95 +159,60 @@ export function InventoryToolbar({
             </InputGroupAddon>
           ) : null}
         </InputGroup>
+      </div>
 
-        <div className="flex flex-wrap gap-2">
-          <FilterMenu
-            label="Stock"
-            value={query.stockLevel ?? ALL}
-            options={STOCK_OPTIONS}
-            onChange={(value) =>
-              onStockLevel(isStockLevel(value) ? value : undefined)
-            }
-          />
-          <FilterMenu
-            label="Status"
-            value={query.status ?? ALL}
-            options={STATUS_OPTIONS}
-            onChange={(value) => onStatus(isStatus(value) ? value : undefined)}
-          />
-          {query.view === "products" ? (
-            <FilterMenu
-              label="Approval"
-              value={query.approvalStatus ?? ALL}
-              options={APPROVAL_OPTIONS}
-              onChange={(value) =>
-                onApprovalStatus(isApprovalStatus(value) ? value : undefined)
-              }
-            />
-          ) : null}
-          <FilterMenu
-            label="Low at"
-            value={String(query.lowStockAt)}
-            options={thresholdOptions}
-            onChange={(value) => {
-              const next = Number(value)
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-sm text-muted-foreground">
+          {total === undefined
+            ? "Store inventory"
+            : `${total} ${total === 1 ? noun : `${noun}s`}`}
+        </p>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button type="button" variant="outline">
+              <span className="text-muted-foreground">Sort</span>
+              {optionLabel(sortOptions, query.sort)}
+              <ChevronDown className="text-muted-foreground" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Sort</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuRadioGroup
+              value={query.sort}
+              onValueChange={(value) => {
+                if (query.view === "products" && isProductSort(value)) {
+                  onSort(value)
+                }
 
-              if (Number.isInteger(next) && next > 0) {
-                onLowStockAt(next)
-              }
+                if (query.view === "variants" && isVariantSort(value)) {
+                  onSort(value)
+                }
+              }}
+            >
+              {sortOptions.map((option) => (
+                <DropdownMenuRadioItem key={option.value} value={option.value}>
+                  {option.label}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        {filtersActive ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setDraft("")
+              onClear()
             }}
-          />
-          <FilterMenu
-            label="Sort"
-            value={query.sort}
-            options={sortOptions}
-            onChange={(value) => {
-              if (query.view === "products" && isProductSort(value)) {
-                onSort(value)
-              }
-
-              if (query.view === "variants" && isVariantSort(value)) {
-                onSort(value)
-              }
-            }}
-          />
-        </div>
+          >
+            <X />
+            Clear
+          </Button>
+        ) : null}
       </div>
     </div>
-  )
-}
-
-function FilterMenu({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string
-  value: string
-  options: FilterOption[]
-  onChange: (value: string) => void
-}) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button type="button" variant="outline">
-          <span className="text-muted-foreground">{label}</span>
-          {optionLabel(options, value)}
-          <ChevronDown className="text-muted-foreground" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start">
-        <DropdownMenuLabel>{label}</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuRadioGroup value={value} onValueChange={onChange}>
-          {options.map((option) => (
-            <DropdownMenuRadioItem key={option.value} value={option.value}>
-              {option.label}
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
   )
 }
