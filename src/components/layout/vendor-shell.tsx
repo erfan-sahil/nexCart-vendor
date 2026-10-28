@@ -54,7 +54,7 @@ export function VendorShell() {
           onOpenMobile={() => setMobileOpen(true)}
           onToggleCollapsed={() => setCollapsed((current) => !current)}
         />
-        <main className="flex-1 px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+        <main className="flex-1 px-4 py-5 sm:px-5 sm:py-6">
           <Outlet />
         </main>
       </div>

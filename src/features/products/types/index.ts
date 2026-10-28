@@ -14,4 +14,6 @@ export type {
   ProductPage,
   ProductSort,
   ProductStatus,
+  ProductVariant,
+  ProductVariantPage,
 } from "./product.types"

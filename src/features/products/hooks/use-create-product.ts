@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
+import { ApiError } from "@/lib/api/errors"
+
 import type {
   CreateProductPayload,
   UpdateProductPayload,
@@ -7,12 +9,15 @@ import type {
 import {
   catalogKeys,
   createProduct,
+  createVariant,
   deleteProduct,
   getCategoryAttributes,
   getCategoryTree,
   getMyStore,
   productKeys,
+  submitProduct,
   updateProduct,
+  type CreateVariantPayload,
 } from "../services"
 
 export function useVendorStore(enabled: boolean) {
@@ -48,6 +53,52 @@ export function useCreateProduct() {
   return useMutation({
     mutationFn: (payload: CreateProductPayload) => createProduct(payload),
     onSuccess: (product) => {
+      queryClient.setQueryData(productKeys.detail(product.id), product)
+      void queryClient.invalidateQueries({ queryKey: productKeys.lists() })
+    },
+  })
+}
+
+export function useCreateProductWithOffer() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (input: {
+      product: CreateProductPayload
+      variants: CreateVariantPayload[]
+      submitForApproval: boolean
+    }) => {
+      const created = await createProduct(input.product)
+
+      try {
+        for (const variant of input.variants) {
+          await createVariant(created.id, variant)
+        }
+      } catch (error) {
+        await deleteProduct(created.id).catch(() => undefined)
+        throw error
+      }
+
+      if (!input.submitForApproval) {
+        return { product: created, approvalWarning: null as string | null }
+      }
+
+      try {
+        const submitted = await submitProduct(created.id)
+        return { product: submitted, approvalWarning: null as string | null }
+      } catch (error) {
+        const message =
+          error instanceof ApiError
+            ? error.message
+            : "It could not be sent for approval."
+
+        return {
+          product: created,
+          approvalWarning: `The product was saved, but it was not sent for approval. ${message}`,
+        }
+      }
+    },
+    onSuccess: ({ product }) => {
       queryClient.setQueryData(productKeys.detail(product.id), product)
       void queryClient.invalidateQueries({ queryKey: productKeys.lists() })
     },

@@ -63,7 +63,8 @@ export const NAV = defineNav([
         kind: "page",
         label: "Store Profile",
         path: "/store/profile",
-        description: "Public store name, logo, and contact details.",
+        description:
+          "Name, images, contact, policies, and payout details for this store.",
         icon: Store,
       },
       {

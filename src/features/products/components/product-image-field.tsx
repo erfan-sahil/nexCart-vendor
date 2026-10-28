@@ -23,6 +23,7 @@ type ProductImageFieldProps = {
   images: string[]
   error?: string
   disabled?: boolean
+  required?: boolean
   onChange: (images: string[]) => void
   onPendingChange?: (pending: boolean) => void
 }
@@ -31,6 +32,7 @@ export function ProductImageField({
   images,
   error,
   disabled = false,
+  required = false,
   onChange,
   onPendingChange,
 }: ProductImageFieldProps) {
@@ -123,7 +125,9 @@ export function ProductImageField({
 
   return (
     <Field data-invalid={Boolean(message) || undefined}>
-      <FieldLabel htmlFor="product-images">Images</FieldLabel>
+      <FieldLabel htmlFor="product-images">
+        Images{required ? " *" : ""}
+      </FieldLabel>
       <input
         ref={inputRef}
         id="product-images"
@@ -131,65 +135,51 @@ export function ProductImageField({
         accept={IMAGE_TYPES.join(",")}
         multiple
         className="sr-only"
+        required={required}
+        aria-required={required}
         disabled={busy || !canAdd}
         onChange={(event) => void onFiles(event.target.files)}
       />
-      {images.length > 0 ? (
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-          {images.map((image, index) => (
-            <div
-              key={image}
-              className="relative overflow-hidden rounded-xl border border-border bg-background"
-            >
-              <img
-                src={image}
-                alt=""
-                className="aspect-square w-full object-cover"
-              />
-              {index === 0 ? (
-                <span className="absolute bottom-1 left-1 rounded-md bg-background/90 px-1.5 py-0.5 text-[10px] font-medium">
-                  Thumbnail
-                </span>
-              ) : null}
-              <Button
-                type="button"
-                variant="outline"
-                size="icon-xs"
-                className="absolute top-1 right-1 cursor-pointer bg-background"
-                aria-label={`Remove image ${index + 1}`}
-                disabled={busy}
-                onClick={() => {
-                  setLocalError(null)
-                  onChange(images.filter((item) => item !== image))
-                }}
-              >
-                <X />
-              </Button>
-            </div>
-          ))}
-          {canAdd ? (
-            <button
+      <div className="flex w-auto flex-wrap gap-3">
+        {images.map((image, index) => (
+          <div
+            key={image}
+            className="relative size-36 overflow-hidden rounded-xl border border-border bg-background"
+          >
+            <img src={image} alt="" className="size-full object-cover" />
+            {index === 0 ? (
+              <span className="absolute bottom-1 left-1 rounded-md bg-background/90 px-1.5 py-0.5 text-[10px] font-medium">
+                Thumbnail
+              </span>
+            ) : null}
+            <Button
               type="button"
+              variant="outline"
+              size="icon-xs"
+              className="absolute top-1 right-1 cursor-pointer bg-background"
+              aria-label={`Remove image ${index + 1}`}
               disabled={busy}
-              onClick={chooseFile}
-              className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-border bg-background text-xs text-muted-foreground transition-colors hover:border-primary/50 disabled:cursor-not-allowed"
+              onClick={() => {
+                setLocalError(null)
+                onChange(images.filter((item) => item !== image))
+              }}
             >
-              <ImagePlus className="size-4" />
-              {uploading ? "Uploading…" : "Add"}
-            </button>
-          ) : null}
-        </div>
-      ) : (
-        <button
-          type="button"
-          disabled={busy}
-          onClick={chooseFile}
-          className="flex h-24 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-background text-sm text-muted-foreground transition-colors hover:border-primary/50 disabled:cursor-not-allowed"
-        >
-          <ImagePlus className="size-5" />
-          {uploading ? "Uploading…" : "Upload image"}
-        </button>
-      )}
+              <X />
+            </Button>
+          </div>
+        ))}
+        {canAdd ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={chooseFile}
+            className="flex size-36 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-border bg-background text-xs text-muted-foreground transition-colors hover:border-primary/50 disabled:cursor-not-allowed"
+          >
+            <ImagePlus className="size-4" />
+            {uploading ? "Uploading…" : "Add image"}
+          </button>
+        ) : null}
+      </div>
       <FieldDescription>
         JPEG, PNG, WebP, or GIF. Up to {MAX_PRODUCT_IMAGES} images, 5 MB each.
         The first image is the thumbnail.

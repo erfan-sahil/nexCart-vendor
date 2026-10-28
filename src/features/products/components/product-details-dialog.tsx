@@ -1,6 +1,7 @@
-import { useState } from "react"
-import { Package } from "lucide-react"
+import { useState, type ReactNode } from "react"
+import { Archive, CircleCheck, Package, Star } from "lucide-react"
 
+import { StatusBadge } from "@/components/shared/status-badge"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -14,12 +15,20 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { resolveAssetUrl } from "@/lib/api/assets"
 import { cn } from "@/lib/utils"
 
+import { useProductVariants } from "../hooks"
 import {
+  formatMoney,
+  formatOriginalPriceRange,
   formatPriceRange,
   formatProductDate,
   formatVariantCount,
 } from "../lib/format"
-import type { Product, ProductAttribute, ProductImage } from "../types"
+import type {
+  Product,
+  ProductAttribute,
+  ProductImage,
+  ProductVariant,
+} from "../types"
 
 import { ProductStatusBadges, ProductTagBadge } from "./product-status-badges"
 
@@ -52,16 +61,14 @@ function ProductDetails({
   const specs = product.attributes.filter(
     (attribute) => attribute.role === "spec"
   )
+  const hasVariants = product.offer.variantCount > 0
+  const originalPrice = formatOriginalPriceRange(product.offer)
   const stock =
     product.offer.variantCount === 0
       ? "No variants"
       : product.offer.inStock
         ? "In stock"
         : "Out of stock"
-  const stockDetail =
-    product.offer.variantCount === 0
-      ? "Add a variant to sell this product"
-      : formatVariantCount(product.offer.variantCount)
   const rating =
     product.ratingSummary.count === 0
       ? "No ratings"
@@ -73,90 +80,127 @@ function ProductDetails({
 
   return (
     <Dialog open onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-xl">
-        <DialogHeader className="shrink-0 border-b border-brand/20 bg-brand-soft px-5 py-5 pr-12 text-left">
-          <div className="flex items-start gap-4">
-            <ProductGallery images={images} name={product.name} />
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium text-brand-text">
-                {product.category.name || "Uncategorized"}
-              </p>
-              <DialogTitle className="mt-1 text-base leading-snug font-semibold">
-                {product.name}
-              </DialogTitle>
-              {product.shortDescription ? (
-                <DialogDescription className="mt-1 line-clamp-2 text-foreground/70">
-                  {product.shortDescription}
-                </DialogDescription>
-              ) : (
-                <DialogDescription className="sr-only">
-                  {product.slug}
-                </DialogDescription>
-              )}
-              <div className="mt-3">
-                <ProductStatusBadges product={product} />
-              </div>
-            </div>
+      <DialogContent className="flex h-[min(44rem,calc(100dvh-2rem))] max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
+        <DialogHeader className="shrink-0 border-b border-border px-5 py-4 pr-12 text-left">
+          <p className="text-xs font-medium text-brand-text">
+            {product.category.name || "Uncategorized"}
+          </p>
+          <DialogTitle className="mt-1 text-lg leading-snug font-semibold">
+            {product.name}
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            Product details for {product.name}
+          </DialogDescription>
+          <div className="mt-3">
+            <ProductStatusBadges product={product} />
           </div>
         </DialogHeader>
 
-        <dl className="grid grid-cols-3 border-b border-border">
-          <Stat label="Price" value={formatPriceRange(product.offer)} />
-          <Stat label="Stock" value={stock} detail={stockDetail} />
-          <Stat label="Rating" value={rating} detail={ratingDetail} />
-        </dl>
+        <ScrollArea type="auto" className="min-h-0 flex-1">
+          <div className="flex flex-col gap-6 px-5 py-5">
+            <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <Fact
+                label="Price"
+                value={formatPriceRange(product.offer)}
+                detail={originalPrice ? `Was ${originalPrice}` : undefined}
+              />
+              <Fact
+                label="Stock"
+                value={stock}
+                detail={
+                  hasVariants
+                    ? formatVariantCount(product.offer.variantCount)
+                    : "Add a variant to sell"
+                }
+              />
+              <Fact label="Rating" value={rating} detail={ratingDetail} />
+              <Fact
+                label="Store"
+                value={product.store.name || "—"}
+                detail={formatProductDate(product.updatedAt)}
+              />
+            </dl>
 
-        <ScrollArea
-          type="auto"
-          className="min-h-0 flex-1 overflow-hidden"
-          viewportClassName="h-auto max-h-[min(22rem,calc(100dvh-20rem))]"
-        >
-          <div className="flex flex-col gap-5 px-5 py-5">
             {product.reviewNote ? (
               <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
                 {product.reviewNote}
               </p>
             ) : null}
 
-            <section className="flex flex-col gap-1.5">
-              <SectionTitle>Description</SectionTitle>
-              <p className="text-sm leading-relaxed whitespace-pre-line text-foreground">
-                {product.description || "No description yet."}
-              </p>
-            </section>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+              <ProductGallery images={images} name={product.name} />
+              <Section title="Description" className="min-w-0 flex-1">
+                <div className="rounded-lg border border-border px-3 py-3">
+                  {product.shortDescription ? (
+                    <p className="text-sm font-medium">
+                      {product.shortDescription}
+                    </p>
+                  ) : null}
+                  <p
+                    className={cn(
+                      "text-sm leading-relaxed whitespace-pre-line text-foreground",
+                      product.shortDescription && "mt-2 text-muted-foreground"
+                    )}
+                  >
+                    {product.description || "No description yet."}
+                  </p>
+                </div>
+              </Section>
+            </div>
 
-            <section className="flex flex-col gap-1.5">
-              <SectionTitle>Details</SectionTitle>
-              <dl className="overflow-hidden rounded-lg border border-border">
-                <SpecRow label="Slug" value={product.slug} />
-                <SpecRow
-                  label="Created"
-                  value={formatProductDate(product.createdAt)}
+            {specs.length > 0 ? (
+              <Section title="Specifications">
+                <FactList
+                  items={specs.map((attribute) => ({
+                    label: attributeLabel(attribute),
+                    value: attributeValue(attribute),
+                  }))}
                 />
-                <SpecRow
-                  label="Updated"
-                  value={formatProductDate(product.updatedAt)}
-                />
-                {specs.map((attribute) => (
-                  <SpecRow
-                    key={attribute.attributeId}
-                    label={attributeLabel(attribute)}
-                    value={attributeValue(attribute)}
-                  />
-                ))}
-              </dl>
-            </section>
+              </Section>
+            ) : null}
+
+            <Section
+              title="Variants"
+              meta={formatVariantCount(product.offer.variantCount)}
+            >
+              {hasVariants ? (
+                <VariantList productId={product.id} />
+              ) : (
+                <p className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
+                  Add a variant to sell this product.
+                </p>
+              )}
+            </Section>
 
             {product.tags.length > 0 ? (
-              <section className="flex flex-col gap-1.5">
-                <SectionTitle>Tags</SectionTitle>
+              <Section title="Tags">
                 <div className="flex flex-wrap gap-1.5">
                   {product.tags.map((tag) => (
                     <ProductTagBadge key={tag} tag={tag} />
                   ))}
                 </div>
-              </section>
+              </Section>
             ) : null}
+
+            <Section title="Record">
+              <FactList
+                items={[
+                  { label: "Slug", value: product.slug },
+                  {
+                    label: "Category",
+                    value: product.category.name || "Uncategorized",
+                  },
+                  {
+                    label: "Created",
+                    value: formatProductDate(product.createdAt),
+                  },
+                  {
+                    label: "Updated",
+                    value: formatProductDate(product.updatedAt),
+                  },
+                ]}
+              />
+            </Section>
           </div>
         </ScrollArea>
 
@@ -175,6 +219,155 @@ function ProductDetails({
   )
 }
 
+function VariantList({ productId }: { productId: string }) {
+  const variants = useProductVariants(productId, true)
+  const page = variants.data
+
+  if (variants.isPending) {
+    return (
+      <div className="flex flex-col gap-2" aria-hidden="true">
+        <div className="h-14 animate-pulse rounded-lg bg-muted" />
+        <div className="h-14 animate-pulse rounded-lg bg-muted" />
+      </div>
+    )
+  }
+
+  if (variants.isError || !page) {
+    return (
+      <p className="text-sm text-destructive" role="alert">
+        Variants could not be loaded.
+      </p>
+    )
+  }
+
+  const items = page.items.slice().sort((left, right) => {
+    if (left.isDefault !== right.isDefault) {
+      return left.isDefault ? -1 : 1
+    }
+
+    return left.sku.localeCompare(right.sku)
+  })
+
+  if (items.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        This product has no variants yet.
+      </p>
+    )
+  }
+
+  return (
+    <div className="overflow-hidden rounded-lg border border-border">
+      <div className="hidden grid-cols-[minmax(0,1.5fr)_6.5rem_5.5rem_7.5rem] gap-3 border-b border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground sm:grid">
+        <span>Variant</span>
+        <span>Price</span>
+        <span>Stock</span>
+        <span>Status</span>
+      </div>
+      <ul>
+        {items.map((variant) => (
+          <li
+            key={variant.id}
+            className="border-b border-border last:border-b-0"
+          >
+            <VariantRow variant={variant} />
+          </li>
+        ))}
+      </ul>
+      {page.pagination.total > items.length ? (
+        <p className="border-t border-border px-3 py-2 text-xs text-muted-foreground">
+          Showing {items.length} of {page.pagination.total} variants.
+        </p>
+      ) : null}
+    </div>
+  )
+}
+
+function VariantRow({ variant }: { variant: ProductVariant }) {
+  const discounted = variant.currentPrice !== variant.price
+  const discount = discountLabel(variant)
+  const options = variant.attributes
+    .map(
+      (attribute) =>
+        `${attributeLabel(attribute)}: ${attributeValue(attribute)}`
+    )
+    .filter((label) => !label.endsWith(": —"))
+
+  return (
+    <div className="grid gap-3 px-3 py-3 sm:grid-cols-[minmax(0,1.5fr)_6.5rem_5.5rem_7.5rem] sm:items-center">
+      <div className="flex min-w-0 items-center gap-3">
+        <VariantImage image={variant.image} name={variant.sku} />
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium">
+            {options.length > 0 ? options.join(" · ") : "Standard"}
+          </p>
+          <p className="truncate text-xs text-muted-foreground">
+            {variant.sku}
+          </p>
+        </div>
+      </div>
+      <div>
+        <p className="text-sm font-medium">
+          {formatMoney(variant.currentPrice)}
+        </p>
+        {discounted ? (
+          <p className="text-xs text-muted-foreground line-through">
+            {formatMoney(variant.price)}
+          </p>
+        ) : null}
+        {discount ? (
+          <p className="text-xs text-muted-foreground">{discount}</p>
+        ) : null}
+      </div>
+      <p className="text-sm">
+        {variant.stock === 0 ? "Out of stock" : variant.stock}
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {variant.isDefault ? (
+          <StatusBadge icon={Star} tone="brand">
+            Default
+          </StatusBadge>
+        ) : null}
+        <StatusBadge
+          icon={variant.status === "active" ? CircleCheck : Archive}
+          tone={variant.status === "active" ? "success" : "neutral"}
+        >
+          {variant.status === "active" ? "Active" : "Archived"}
+        </StatusBadge>
+      </div>
+    </div>
+  )
+}
+
+function VariantImage({
+  image,
+  name,
+}: {
+  image: ProductImage | null
+  name: string
+}) {
+  const [failed, setFailed] = useState(false)
+
+  if (!image || failed) {
+    return (
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+        <Package className="size-4" />
+      </span>
+    )
+  }
+
+  return (
+    <span className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
+      <img
+        src={resolveAssetUrl(image.url)}
+        alt={image.alt || name}
+        className="size-full object-cover"
+        onError={() => setFailed(true)}
+      />
+    </span>
+  )
+}
+
 function ProductGallery({
   images,
   name,
@@ -189,15 +382,15 @@ function ProductGallery({
 
   if (!active) {
     return (
-      <span className="flex size-24 shrink-0 items-center justify-center rounded-xl bg-background text-muted-foreground shadow-sm ring-4 ring-background sm:size-28">
-        <Package className="size-5" />
-      </span>
+      <div className="flex size-36 shrink-0 items-center justify-center rounded-lg border border-dashed border-border text-muted-foreground sm:size-44">
+        <Package className="size-6" />
+      </div>
     )
   }
 
   return (
-    <div className="flex w-24 shrink-0 flex-col gap-1.5 sm:w-28">
-      <div className="flex size-24 items-center justify-center overflow-hidden rounded-xl bg-background shadow-sm ring-4 ring-background sm:size-28">
+    <div className="flex w-36 shrink-0 flex-col gap-2 sm:w-44">
+      <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-lg border border-border bg-muted">
         <img
           src={resolveAssetUrl(active.url)}
           alt={active.alt || name}
@@ -208,7 +401,7 @@ function ProductGallery({
         />
       </div>
       {visible.length > 1 ? (
-        <div className="flex gap-1 overflow-x-auto">
+        <div className="flex gap-1.5 overflow-x-auto">
           {visible.map((image) => (
             <button
               key={image.id}
@@ -216,7 +409,7 @@ function ProductGallery({
               aria-label={image.alt || "Show image"}
               aria-pressed={image.id === active.id}
               className={cn(
-                "size-7 shrink-0 cursor-pointer overflow-hidden rounded-md border border-border bg-muted",
+                "size-12 shrink-0 cursor-pointer overflow-hidden rounded-md border border-border bg-muted",
                 image.id === active.id && "border-brand ring-1 ring-brand"
               )}
               onClick={() => setActiveId(image.id)}
@@ -237,7 +430,31 @@ function ProductGallery({
   )
 }
 
-function Stat({
+function Section({
+  title,
+  meta,
+  className,
+  children,
+}: {
+  title: string
+  meta?: string
+  className?: string
+  children: ReactNode
+}) {
+  return (
+    <section className={cn("flex flex-col gap-2", className)}>
+      <div className="flex items-baseline justify-between gap-3">
+        <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+          {title}
+        </h3>
+        {meta ? <p className="text-xs text-muted-foreground">{meta}</p> : null}
+      </div>
+      {children}
+    </section>
+  )
+}
+
+function Fact({
   label,
   value,
   detail,
@@ -247,11 +464,11 @@ function Stat({
   detail?: string
 }) {
   return (
-    <div className="min-w-0 px-4 py-3 not-first:border-l not-first:border-border">
+    <div className="min-w-0 rounded-lg border border-border px-3 py-2.5">
       <dt className="text-[0.65rem] tracking-wide text-muted-foreground uppercase">
         {label}
       </dt>
-      <dd className="truncate text-sm font-medium">{value}</dd>
+      <dd className="mt-1 truncate text-sm font-medium">{value}</dd>
       {detail ? (
         <dd className="truncate text-xs text-muted-foreground">{detail}</dd>
       ) : null}
@@ -259,21 +476,29 @@ function Stat({
   )
 }
 
-function SectionTitle({ children }: { children: string }) {
+function FactList({ items }: { items: { label: string; value: string }[] }) {
   return (
-    <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-      {children}
-    </h3>
+    <dl className="grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2">
+      {items.map((item) => (
+        <div key={item.label} className="bg-card px-3 py-2.5">
+          <dt className="text-xs text-muted-foreground">{item.label}</dt>
+          <dd className="mt-0.5 text-sm wrap-break-word">{item.value}</dd>
+        </div>
+      ))}
+    </dl>
   )
 }
 
-function SpecRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3 border-b border-border px-3 py-2 last:border-b-0">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="text-sm wrap-break-word">{value}</dd>
-    </div>
-  )
+function discountLabel(variant: ProductVariant) {
+  if (variant.discountType === null || variant.discountValue === null) {
+    return null
+  }
+
+  if (variant.discountType === "percent") {
+    return `${variant.discountValue}% off`
+  }
+
+  return `${formatMoney(variant.discountValue)} off`
 }
 
 function attributeLabel(attribute: ProductAttribute) {

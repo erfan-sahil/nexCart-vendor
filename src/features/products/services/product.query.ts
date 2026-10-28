@@ -6,4 +6,6 @@ export const productKeys = {
   list: (query: ProductListQuery) => [...productKeys.lists(), query] as const,
   details: () => [...productKeys.all, "detail"] as const,
   detail: (productId: string) => [...productKeys.details(), productId] as const,
+  variants: (productId: string) =>
+    [...productKeys.detail(productId), "variants"] as const,
 }

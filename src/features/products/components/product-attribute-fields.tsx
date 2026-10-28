@@ -40,8 +40,8 @@ export function ProductAttributeFields({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <p className="text-sm font-medium">Details</p>
+    <div className="grid gap-4 sm:col-span-2 sm:grid-cols-2">
+      <p className="text-sm font-medium sm:col-span-2">Details</p>
       {specs.map((assignment) => {
         const id = assignment.attribute.id
         const draft = drafts[id] ?? emptyAttributeDraft()
@@ -52,7 +52,15 @@ export function ProductAttributeFields({
         const fieldId = `product-attribute-${id}`
 
         return (
-          <Field key={id} data-invalid={Boolean(error) || undefined}>
+          <Field
+            key={id}
+            className={
+              assignment.attribute.type === "multiselect"
+                ? "sm:col-span-2"
+                : undefined
+            }
+            data-invalid={Boolean(error) || undefined}
+          >
             <FieldLabel htmlFor={fieldId}>
               {label}
               {assignment.isRequired ? " *" : ""}

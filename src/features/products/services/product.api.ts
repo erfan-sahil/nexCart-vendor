@@ -6,7 +6,13 @@ import type {
   CreateProductPayload,
   UpdateProductPayload,
 } from "../lib/create-product"
-import type { Product, ProductListQuery, ProductPage } from "../types"
+import type {
+  Product,
+  ProductListQuery,
+  ProductPage,
+  ProductVariant,
+  ProductVariantPage,
+} from "../types"
 
 function toListParams(query: ProductListQuery) {
   return {
@@ -22,7 +28,7 @@ function toListParams(query: ProductListQuery) {
   }
 }
 
-function readPagination(meta: ApiSuccess<Product[]>["meta"]): PaginationMeta {
+function readPagination(meta: ApiSuccess<unknown>["meta"]): PaginationMeta {
   const pagination = meta?.pagination
 
   if (!pagination) {
@@ -110,6 +116,81 @@ export async function updateProduct(
   }
 }
 
+export type CreateVariantPayload = {
+  sku: string
+  price: number
+  stock: number
+  discountType?: "percent" | "amount" | null
+  discountValue?: number | null
+  isDefault: boolean
+  simple?: boolean
+  attributes?: {
+    attributeId: string
+    text?: string
+    number?: number
+    optionIds?: string[]
+  }[]
+}
+
+export type UpdateVariantPayload = Omit<CreateVariantPayload, "simple">
+
+export async function createVariant(
+  productId: string,
+  payload: CreateVariantPayload
+) {
+  try {
+    const { data } = await api.post<ApiSuccess<{ id: string }>>(
+      `/products/${productId}/variants`,
+      payload
+    )
+
+    return data.data
+  } catch (error) {
+    throw toApiError(error)
+  }
+}
+
+export async function updateVariant(
+  productId: string,
+  variantId: string,
+  payload: UpdateVariantPayload
+) {
+  try {
+    const { data } = await api.patch<ApiSuccess<ProductVariant>>(
+      `/products/${productId}/variants/${variantId}`,
+      payload
+    )
+
+    return data.data
+  } catch (error) {
+    throw toApiError(error)
+  }
+}
+
+export async function deleteVariant(productId: string, variantId: string) {
+  try {
+    const { data } = await api.delete<ApiSuccess<{ id: string }>>(
+      `/products/${productId}/variants/${variantId}`
+    )
+
+    return data.data
+  } catch (error) {
+    throw toApiError(error)
+  }
+}
+
+export async function submitProduct(productId: string) {
+  try {
+    const { data } = await api.post<ApiSuccess<Product>>(
+      `/products/${productId}/submit`
+    )
+
+    return data.data
+  } catch (error) {
+    throw toApiError(error)
+  }
+}
+
 export async function deleteProduct(productId: string) {
   try {
     const { data } = await api.delete<ApiSuccess<{ id: string }>>(
@@ -117,6 +198,24 @@ export async function deleteProduct(productId: string) {
     )
 
     return data.data
+  } catch (error) {
+    throw toApiError(error)
+  }
+}
+
+export async function listProductVariants(
+  productId: string
+): Promise<ProductVariantPage> {
+  try {
+    const { data } = await api.get<ApiSuccess<ProductVariant[]>>(
+      `/products/${productId}/variants`,
+      { params: { page: 1, limit: 100, sort: "sku" } }
+    )
+
+    return {
+      items: data.data,
+      pagination: readPagination(data.meta),
+    }
   } catch (error) {
     throw toApiError(error)
   }

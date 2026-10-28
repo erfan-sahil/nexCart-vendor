@@ -9,8 +9,26 @@ export const createProductFormSchema = z.object({
   name: z
     .string()
     .trim()
-    .min(2, "Enter at least 2 characters.")
-    .max(160, "Use 160 characters or fewer."),
+    .superRefine((value, ctx) => {
+      if (!value) {
+        ctx.addIssue({ code: "custom", message: "Enter a name." })
+        return
+      }
+
+      if (value.length < 2) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Enter at least 2 characters.",
+        })
+      }
+
+      if (value.length > 160) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Use 160 characters or fewer.",
+        })
+      }
+    }),
   slug: z
     .string()
     .trim()
@@ -25,7 +43,14 @@ export const createProductFormSchema = z.object({
     ),
   shortDescription: z.string().trim().max(300, "Use 300 characters or fewer."),
   description: z.string().trim().max(10_000, "Use 10000 characters or fewer."),
-  categoryId: z.string().regex(/^[a-f\d]{24}$/i, "Choose a category."),
+  categoryId: z
+    .string()
+    .trim()
+    .superRefine((value, ctx) => {
+      if (!/^[a-f\d]{24}$/i.test(value)) {
+        ctx.addIssue({ code: "custom", message: "Choose a category." })
+      }
+    }),
   tags: z
     .string()
     .trim()
@@ -97,11 +122,14 @@ export function emptyAttributeDraft(): AttributeDraft {
   }
 }
 
-export function specAssignments(assignments: CategoryAttribute[]) {
+function orderedAssignments(
+  assignments: CategoryAttribute[],
+  role: "spec" | "variant"
+) {
   return assignments
     .filter(
       (assignment) =>
-        assignment.attribute.isActive && assignment.attribute.role === "spec"
+        assignment.attribute.isActive && assignment.attribute.role === role
     )
     .slice()
     .sort(
@@ -109,6 +137,14 @@ export function specAssignments(assignments: CategoryAttribute[]) {
         left.sortOrder - right.sortOrder ||
         left.attribute.name.localeCompare(right.attribute.name)
     )
+}
+
+export function specAssignments(assignments: CategoryAttribute[]) {
+  return orderedAssignments(assignments, "spec")
+}
+
+export function variantAssignments(assignments: CategoryAttribute[]) {
+  return orderedAssignments(assignments, "variant")
 }
 
 export function buildAttributeInputs(
