@@ -6,6 +6,7 @@ import type {
   ListVendorOrdersParams,
   ListVendorOrdersResult,
   VendorOrder,
+  VendorOrderDetail,
   VendorOrderSummary,
 } from "../types/vendor-orders.types"
 
@@ -57,9 +58,9 @@ export async function getVendorOrderSummary(): Promise<VendorOrderSummary> {
 
 export async function getVendorOrder(
   vendorOrderId: string
-): Promise<VendorOrder> {
+): Promise<VendorOrderDetail> {
   try {
-    const { data } = await api.get<ApiSuccess<VendorOrder>>(
+    const { data } = await api.get<ApiSuccess<VendorOrderDetail>>(
       `/vendor/orders/${vendorOrderId}`
     )
     return data.data

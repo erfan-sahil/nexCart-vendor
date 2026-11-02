@@ -37,6 +37,28 @@ export type VendorOrder = {
   updatedAt: string
 }
 
+export type VendorInboundFulfillment = {
+  id: string
+  orderId: string
+  orderNumber: string
+  storeId: string
+  storeName: string
+  status: string
+  itemsSubtotal: number
+  hasDiscrepancy: boolean
+  inboundCarrier: string
+  inboundTracking: string
+  dispatchedAt: string | null
+  receivedAt: string | null
+  inspectedAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type VendorOrderDetail = VendorOrder & {
+  inbound: VendorInboundFulfillment | null
+}
+
 export type VendorOrderSummary = {
   total: number
   pending: number
