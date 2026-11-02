@@ -18,21 +18,9 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group"
 
-import {
-  VENDOR_ORDER_SORT_LABEL,
-  VENDOR_ORDER_SORTS,
-  VENDOR_ORDER_STATUS_LABEL,
-  type OrderStatusScope,
-  statusesForScope,
-} from "../constants"
+import { VENDOR_ORDER_SORT_LABEL, VENDOR_ORDER_SORTS } from "../constants"
 import { hasOrderFilters } from "../lib/order-query"
-import type {
-  OrderListQuery,
-  VendorOrderSort,
-  VendorOrderStatus,
-} from "../types"
-
-const ALL = "all"
+import type { OrderListQuery, VendorOrderSort } from "../types"
 
 type FilterOption = {
   value: string
@@ -45,17 +33,11 @@ const SORT_OPTIONS: FilterOption[] = VENDOR_ORDER_SORTS.map((sort) => ({
 }))
 
 type OrderToolbarProps = {
-  scope: OrderStatusScope
   query: OrderListQuery
   total: number | undefined
   onSearch: (search: string | undefined) => void
-  onStatus: (status: VendorOrderStatus | undefined) => void
   onSort: (sort: VendorOrderSort) => void
   onClear: () => void
-}
-
-function isStatus(value: string): value is VendorOrderStatus {
-  return value in VENDOR_ORDER_STATUS_LABEL
 }
 
 function isSort(value: string): value is VendorOrderSort {
@@ -67,11 +49,9 @@ function optionLabel(options: FilterOption[], value: string) {
 }
 
 export function OrderToolbar({
-  scope,
   query,
   total,
   onSearch,
-  onStatus,
   onSort,
   onClear,
 }: OrderToolbarProps) {
@@ -82,14 +62,6 @@ export function OrderToolbar({
   const filtersActive =
     hasOrderFilters(query) ||
     (draft !== null && draft.trim() !== querySearch && draft.trim().length > 0)
-
-  const statusOptions: FilterOption[] = [
-    { value: ALL, label: "All statuses" },
-    ...statusesForScope(scope).map((status) => ({
-      value: status,
-      label: VENDOR_ORDER_STATUS_LABEL[status],
-    })),
-  ]
 
   if (querySearch !== trackedSearch) {
     setTrackedSearch(querySearch)
@@ -164,24 +136,16 @@ export function OrderToolbar({
           ) : null}
         </InputGroup>
 
-        <div className="flex flex-wrap gap-2">
-          <FilterMenu
-            label="Status"
-            value={query.status ?? ALL}
-            options={statusOptions}
-            onChange={(value) => onStatus(isStatus(value) ? value : undefined)}
-          />
-          <FilterMenu
-            label="Sort"
-            value={query.sort}
-            options={SORT_OPTIONS}
-            onChange={(value) => {
-              if (isSort(value)) {
-                onSort(value)
-              }
-            }}
-          />
-        </div>
+        <FilterMenu
+          label="Sort"
+          value={query.sort}
+          options={SORT_OPTIONS}
+          onChange={(value) => {
+            if (isSort(value)) {
+              onSort(value)
+            }
+          }}
+        />
       </div>
     </div>
   )

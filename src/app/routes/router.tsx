@@ -6,6 +6,7 @@ import {
   isNavGroup,
   NAV,
   pathSegment,
+  type NavGroup,
   type NavPage,
   type PageHandle,
   type VendorPath,
@@ -24,10 +25,8 @@ import { DiscountsPage } from "@/pages/marketing/discounts/page"
 import { FlashDealsPage } from "@/pages/marketing/flash-deals/page"
 import { SponsoredAdsPage } from "@/pages/marketing/sponsored-ads/page"
 import { NotFoundPage } from "@/pages/not-found/page"
-import { AllOrdersPage } from "@/pages/orders/all/page"
-import { ProcessingPage } from "@/pages/orders/processing/page"
+import { OrdersPage } from "@/pages/orders/page"
 import { ReturnsPage } from "@/pages/orders/returns/page"
-import { ShippedPage } from "@/pages/orders/shipped/page"
 import { BusinessProfilePage } from "@/pages/settings/business-profile/page"
 import { PayoutDetailsPage } from "@/pages/settings/payout-details/page"
 import { SecurityPage } from "@/pages/settings/security/page"
@@ -45,9 +44,7 @@ const pages: Record<VendorPath, ComponentType> = {
   "/store/products": ProductsPage,
   "/store/inventory": InventoryPage,
   "/store/reviews": ReviewsPage,
-  "/orders/all": AllOrdersPage,
-  "/orders/processing": ProcessingPage,
-  "/orders/shipped": ShippedPage,
+  "/orders": OrdersPage,
   "/orders/returns": ReturnsPage,
   "/marketing/discounts": DiscountsPage,
   "/marketing/coupons": CouponsPage,
@@ -71,17 +68,45 @@ function handleFor(page: NavPage): PageHandle {
   }
 }
 
-function pageRoute(page: NavPage, index = false): RouteObject {
+function pageRoute(page: NavPage, asIndex = false): RouteObject {
   return {
-    ...(index ? { index: true } : { path: pathSegment(page.path) }),
+    ...(asIndex ? { index: true } : { path: pathSegment(page.path) }),
     element: createElement(pages[page.path]),
     handle: handleFor(page),
+  }
+}
+
+function ordersGroupRoutes(group: NavGroup): RouteObject {
+  const [ordersPage, returnsPage] = group.children
+
+  return {
+    path: groupBase(group),
+    children: [
+      pageRoute(ordersPage, true),
+      pageRoute(returnsPage),
+      {
+        path: "all",
+        element: <Navigate to="/orders" replace />,
+      },
+      {
+        path: "processing",
+        element: <Navigate to="/orders?tab=action" replace />,
+      },
+      {
+        path: "shipped",
+        element: <Navigate to="/orders?tab=inbound" replace />,
+      },
+    ],
   }
 }
 
 const childRoutes: RouteObject[] = NAV.map((entry) => {
   if (!isNavGroup(entry)) {
     return pageRoute(entry, entry.path === "/")
+  }
+
+  if (entry.label === "Orders") {
+    return ordersGroupRoutes(entry)
   }
 
   const [first] = entry.children

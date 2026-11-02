@@ -1,18 +1,22 @@
 import { useCallback, useMemo } from "react"
 import { useSearchParams } from "react-router"
 
-import { DEFAULT_ORDER_SORT, type OrderStatusScope } from "../constants"
+import {
+  DEFAULT_ORDER_SORT,
+  DEFAULT_ORDER_TAB,
+  type OrderStatusTab,
+} from "../constants"
 import {
   parseOrderListParams,
   toOrderListSearchParams,
 } from "../lib/order-query"
 import type { OrderListPatch } from "../types"
 
-export function useOrderListParams(scope: OrderStatusScope = "all") {
+export function useOrderListParams() {
   const [searchParams, setSearchParams] = useSearchParams()
   const query = useMemo(
-    () => parseOrderListParams(searchParams, scope),
-    [scope, searchParams]
+    () => parseOrderListParams(searchParams),
+    [searchParams]
   )
 
   const updateQuery = useCallback(
@@ -31,9 +35,16 @@ export function useOrderListParams(scope: OrderStatusScope = "all") {
       page: 1,
       search: undefined,
       sort: DEFAULT_ORDER_SORT,
-      status: undefined,
+      tab: DEFAULT_ORDER_TAB,
     })
   }, [updateQuery])
 
-  return { query, updateQuery, clearFilters }
+  const setTab = useCallback(
+    (tab: OrderStatusTab) => {
+      updateQuery({ tab, page: 1 })
+    },
+    [updateQuery]
+  )
+
+  return { query, updateQuery, clearFilters, setTab }
 }

@@ -10,13 +10,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { ApiError } from "@/lib/api/errors"
 import { cn } from "@/lib/utils"
 
-import { VENDOR_ORDER_STATUS_LABEL } from "../constants"
+import { vendorOrderStatusLabel } from "../lib/normalize-order-status"
 import {
   useVendorOrder,
   useVendorOrderActions,
@@ -27,12 +25,21 @@ import {
   formatOrderDate,
   formatOrderDateTime,
 } from "../lib/format"
-import type {
-  VendorInboundFulfillment,
-  VendorOrderDetail,
-  VendorOrderItem,
-} from "../types"
+import {
+  formatQtyProgress,
+  lineOutstandingQty,
+  orderQtyProgress,
+} from "../lib/order-progress"
+import {
+  canAcknowledgeRejectReturns,
+  getStatusTransitions,
+} from "../lib/status-transitions"
+import type { VendorOrderDetail, VendorOrderItem } from "../types"
 
+import {
+  OrderInboundBatches,
+  OrderRejectReturns,
+} from "./order-fulfillment-sections"
 import { OrderStatusBadge } from "./order-status-badge"
 
 type OrderDetailsDialogProps = {
@@ -117,16 +124,12 @@ function OrderDetailsBody({
   order: VendorOrderDetail
   onClose: () => void
 }) {
-  const actions = useVendorOrderActions()
-  const [carrier, setCarrier] = useState("")
-  const [tracking, setTracking] = useState("")
+  const { updateStatus } = useVendorOrderActions()
   const [error, setError] = useState<string | null>(null)
-
-  const busy =
-    actions.accept.isPending ||
-    actions.prepare.isPending ||
-    actions.ready.isPending ||
-    actions.dispatchInbound.isPending
+  const busy = updateStatus.isPending
+  const progress = orderQtyProgress(order)
+  const transitions = getStatusTransitions(order.status)
+  const showAck = canAcknowledgeRejectReturns(order.rejectReturns)
 
   const run = async (fn: () => Promise<unknown>) => {
     setError(null)
@@ -137,52 +140,50 @@ function OrderDetailsBody({
     }
   }
 
-  const primaryAction =
-    order.status === "pending" ? (
+  const primaryActions: ReactNode[] = []
+
+  if (showAck) {
+    primaryActions.push(
       <Button
+        key="ack"
         type="button"
         className="cursor-pointer"
         disabled={busy}
-        onClick={() => run(() => actions.accept.mutateAsync(order.id))}
-      >
-        Accept order
-      </Button>
-    ) : order.status === "accepted" ? (
-      <Button
-        type="button"
-        className="cursor-pointer"
-        disabled={busy}
-        onClick={() => run(() => actions.prepare.mutateAsync(order.id))}
-      >
-        Start preparing
-      </Button>
-    ) : order.status === "preparing" ? (
-      <Button
-        type="button"
-        className="cursor-pointer"
-        disabled={busy}
-        onClick={() => run(() => actions.ready.mutateAsync(order.id))}
-      >
-        Mark ready to ship
-      </Button>
-    ) : order.status === "ready_to_ship" ? (
-      <Button
-        type="button"
-        className="cursor-pointer"
-        disabled={busy || !carrier.trim() || !tracking.trim()}
         onClick={() =>
           run(() =>
-            actions.dispatchInbound.mutateAsync({
+            updateStatus.mutateAsync({
               vendorOrderId: order.id,
-              inboundCarrier: carrier.trim(),
-              inboundTracking: tracking.trim(),
+              status: "received_returned_rejects",
             })
           )
         }
       >
-        Dispatch to warehouse
+        Confirm rejected products received
       </Button>
-    ) : null
+    )
+  }
+
+  for (const step of transitions) {
+    primaryActions.push(
+      <Button
+        key={step.status}
+        type="button"
+        variant={step.status === "cancelled" ? "destructive" : "default"}
+        className="cursor-pointer"
+        disabled={busy}
+        onClick={() =>
+          run(() =>
+            updateStatus.mutateAsync({
+              vendorOrderId: order.id,
+              status: step.status,
+            })
+          )
+        }
+      >
+        {step.label}
+      </Button>
+    )
+  }
 
   return (
     <>
@@ -196,8 +197,14 @@ function OrderDetailsBody({
         <DialogDescription className="sr-only">
           Order details for {order.vendorOrderNumber}
         </DialogDescription>
-        <div className="mt-3">
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           <OrderStatusBadge status={order.status} />
+          <span className="text-xs text-muted-foreground">
+            {formatQtyProgress(order)}
+            {progress.outstanding > 0
+              ? ` · ${progress.outstanding} still needed`
+              : ""}
+          </span>
         </div>
       </DialogHeader>
 
@@ -211,7 +218,7 @@ function OrderDetailsBody({
             />
             <Fact
               label="Status"
-              value={VENDOR_ORDER_STATUS_LABEL[order.status]}
+              value={vendorOrderStatusLabel(order.status)}
               detail={`Parent ${order.orderNumber}`}
             />
             <Fact
@@ -242,44 +249,18 @@ function OrderDetailsBody({
             <ItemList items={order.items} />
           </Section>
 
-          {order.status === "ready_to_ship" ? (
-            <Section title="Dispatch">
-              <div className="rounded-lg border border-border px-3 py-3">
-                <p className="mb-3 text-sm text-muted-foreground">
-                  Enter courier details to send this order to the NexCart
-                  warehouse.
-                </p>
-                <FieldGroup>
-                  <Field>
-                    <FieldLabel htmlFor="inbound-carrier">
-                      Courier name
-                    </FieldLabel>
-                    <Input
-                      id="inbound-carrier"
-                      placeholder="e.g. Pathao, Steadfast"
-                      value={carrier}
-                      onChange={(event) => setCarrier(event.target.value)}
-                    />
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor="inbound-tracking">
-                      Tracking number
-                    </FieldLabel>
-                    <Input
-                      id="inbound-tracking"
-                      placeholder="Tracking or consignment ID"
-                      value={tracking}
-                      onChange={(event) => setTracking(event.target.value)}
-                    />
-                  </Field>
-                </FieldGroup>
-              </div>
-            </Section>
-          ) : null}
+          <Section
+            title="Inbound batches"
+            meta={`${order.inboundBatches.length} shipment${
+              order.inboundBatches.length === 1 ? "" : "s"
+            }`}
+          >
+            <OrderInboundBatches batches={order.inboundBatches} />
+          </Section>
 
-          {order.inbound ? (
-            <Section title="Inbound shipment">
-              <InboundSummary inbound={order.inbound} />
+          {order.rejectReturns.length > 0 ? (
+            <Section title="Rejected returns">
+              <OrderRejectReturns returns={order.rejectReturns} />
             </Section>
           ) : null}
 
@@ -290,8 +271,8 @@ function OrderDetailsBody({
                 { label: "Parent order", value: order.orderNumber },
                 { label: "Store", value: order.storeName || "—" },
                 {
-                  label: "Status",
-                  value: VENDOR_ORDER_STATUS_LABEL[order.status],
+                  label: "Warehouse progress",
+                  value: formatQtyProgress(order),
                 },
                 {
                   label: "Created",
@@ -307,8 +288,8 @@ function OrderDetailsBody({
         </div>
       </ScrollArea>
 
-      <DialogFooter className="mx-0 mb-0 shrink-0 rounded-none border-border bg-card px-5 py-3">
-        {primaryAction}
+      <DialogFooter className="mx-0 mb-0 shrink-0 flex-wrap rounded-none border-border bg-card px-5 py-3">
+        {primaryActions}
         <Button
           type="button"
           variant="outline"
@@ -333,9 +314,11 @@ function ItemList({ items }: { items: VendorOrderItem[] }) {
 
   return (
     <div className="overflow-hidden rounded-lg border border-border">
-      <div className="hidden grid-cols-[minmax(0,1.5fr)_5rem_6.5rem_6.5rem] gap-3 border-b border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground sm:grid">
+      <div className="hidden grid-cols-[minmax(0,1.4fr)_4rem_4rem_4rem_5rem_5rem] gap-2 border-b border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground sm:grid">
         <span>Product</span>
-        <span>Qty</span>
+        <span>Target</span>
+        <span>Accepted</span>
+        <span>Left</span>
         <span>Unit</span>
         <span>Line total</span>
       </div>
@@ -354,54 +337,30 @@ function ItemList({ items }: { items: VendorOrderItem[] }) {
 }
 
 function ItemRow({ item }: { item: VendorOrderItem }) {
+  const outstanding = lineOutstandingQty(item)
+
   return (
-    <div className="grid gap-3 px-3 py-3 sm:grid-cols-[minmax(0,1.5fr)_5rem_6.5rem_6.5rem] sm:items-center">
+    <div className="grid gap-2 px-3 py-3 sm:grid-cols-[minmax(0,1.4fr)_4rem_4rem_4rem_5rem_5rem] sm:items-center">
       <div className="flex min-w-0 items-center gap-3">
         <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
           <Package className="size-4" />
         </span>
         <div className="min-w-0">
           <p className="truncate text-sm font-medium">{item.productName}</p>
-          <p className="truncate text-xs text-muted-foreground">{item.sku}</p>
+          <p className="truncate text-xs text-muted-foreground">
+            {item.sku}
+            {item.expectedQty !== item.targetQty
+              ? ` · ordered ${item.expectedQty}`
+              : ""}
+          </p>
         </div>
       </div>
-      <p className="text-sm">{item.quantity}</p>
+      <p className="text-sm">{item.targetQty}</p>
+      <p className="text-sm">{item.acceptedQtyCumulative}</p>
+      <p className="text-sm text-muted-foreground">{outstanding}</p>
       <p className="text-sm">{formatMoney(item.unitPrice)}</p>
       <p className="text-sm font-medium">{formatMoney(item.lineTotal)}</p>
     </div>
-  )
-}
-
-function InboundSummary({ inbound }: { inbound: VendorInboundFulfillment }) {
-  const carrier = inbound.inboundCarrier.trim() || "—"
-  const tracking = inbound.inboundTracking.trim() || "—"
-
-  return (
-    <FactList
-      items={[
-        { label: "Fulfillment status", value: humanize(inbound.status) },
-        { label: "Courier", value: carrier },
-        { label: "Tracking", value: tracking },
-        {
-          label: "Dispatched",
-          value: inbound.dispatchedAt
-            ? formatOrderDateTime(inbound.dispatchedAt)
-            : "—",
-        },
-        {
-          label: "Received",
-          value: inbound.receivedAt
-            ? formatOrderDateTime(inbound.receivedAt)
-            : "—",
-        },
-        {
-          label: "Inspected",
-          value: inbound.inspectedAt
-            ? formatOrderDateTime(inbound.inspectedAt)
-            : "—",
-        },
-      ]}
-    />
   )
 }
 
@@ -462,12 +421,4 @@ function FactList({ items }: { items: { label: string; value: string }[] }) {
       ))}
     </dl>
   )
-}
-
-function humanize(value: string) {
-  return value
-    .split("_")
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ")
 }

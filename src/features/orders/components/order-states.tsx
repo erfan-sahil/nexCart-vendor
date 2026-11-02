@@ -18,11 +18,17 @@ export function OrderTableSkeleton() {
   )
 }
 
-export function OrderEmptyState({ filtered }: { filtered: boolean }) {
+export function OrderEmptyState({
+  filtered,
+  message,
+}: {
+  filtered: boolean
+  message?: string
+}) {
   return (
     <div className="px-4 py-16 text-center">
       <p className="text-sm font-medium">
-        {filtered ? "No matching orders" : "No orders yet"}
+        {message ?? (filtered ? "No matching orders" : "No orders yet")}
       </p>
       <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
         {filtered

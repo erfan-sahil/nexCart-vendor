@@ -6,14 +6,12 @@ import {
 } from "@tanstack/react-query"
 
 import {
-  acceptVendorOrder,
-  dispatchInbound,
   getVendorOrder,
   getVendorOrderSummary,
   listVendorOrders,
-  prepareVendorOrder,
-  readyVendorOrder,
+  updateVendorOrderStatus,
   vendorOrderKeys,
+  type UpdateVendorOrderStatusPayload,
 } from "../services"
 import type { ListVendorOrdersParams } from "../types/vendor-orders.types"
 
@@ -45,37 +43,16 @@ export function useVendorOrder(vendorOrderId: string) {
 export function useVendorOrderActions() {
   const queryClient = useQueryClient()
 
-  const invalidate = async () => {
-    await queryClient.invalidateQueries({ queryKey: vendorOrderKeys.all })
-  }
-
-  const accept = useMutation({
-    mutationFn: acceptVendorOrder,
-    onSuccess: invalidate,
-  })
-
-  const prepare = useMutation({
-    mutationFn: prepareVendorOrder,
-    onSuccess: invalidate,
-  })
-
-  const ready = useMutation({
-    mutationFn: readyVendorOrder,
-    onSuccess: invalidate,
-  })
-
-  const dispatchInboundMutation = useMutation({
+  const updateStatus = useMutation({
     mutationFn: ({
       vendorOrderId,
-      inboundCarrier,
-      inboundTracking,
-    }: {
-      vendorOrderId: string
-      inboundCarrier: string
-      inboundTracking: string
-    }) => dispatchInbound(vendorOrderId, { inboundCarrier, inboundTracking }),
-    onSuccess: invalidate,
+      ...payload
+    }: UpdateVendorOrderStatusPayload & { vendorOrderId: string }) =>
+      updateVendorOrderStatus(vendorOrderId, payload, crypto.randomUUID()),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: vendorOrderKeys.all })
+    },
   })
 
-  return { accept, prepare, ready, dispatchInbound: dispatchInboundMutation }
+  return { updateStatus }
 }

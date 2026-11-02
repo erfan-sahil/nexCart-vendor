@@ -6,6 +6,8 @@ import {
   useVendorOrderSummary,
   useVendorOrders,
 } from "@/features/orders/hooks/use-vendor-orders"
+import { formatMoney } from "@/features/orders/lib/format"
+import { OrderStatusBadge } from "@/features/orders/components/order-status-badge"
 import { SALES, STOCK } from "../data/dashboard"
 
 export function DashboardHome() {
@@ -29,16 +31,21 @@ export function DashboardHome() {
     {
       label: "Preparing",
       value: summary
-        ? String(summary.accepted + summary.preparing + summary.readyToShip)
+        ? String(
+            summary.accepted +
+              summary.preparing +
+              summary.partiallyAccepted +
+              summary.rejectedAtWarehouse
+          )
         : "—",
       change: "In progress",
-      hint: "Before inbound ship",
+      hint: "Before or between warehouse sends",
     },
     {
-      label: "Completed",
-      value: summary ? String(summary.completed) : "—",
+      label: "Delivered",
+      value: summary ? String(summary.delivered) : "—",
       change: "Fulfilled",
-      hint: "Delivered slices",
+      hint: "Completed vendor slices",
     },
   ]
 
@@ -169,12 +176,10 @@ export function DashboardHome() {
                     </td>
                     <td className="px-4 py-3">—</td>
                     <td className="px-4 py-3">
-                      BDT {order.itemsSubtotal.toLocaleString()}
+                      {formatMoney(order.itemsSubtotal)}
                     </td>
                     <td className="px-4 py-3 sm:px-5">
-                      <span className="inline-flex rounded-md bg-secondary px-2 py-1 text-xs font-medium text-secondary-foreground">
-                        {order.status.replace(/_/g, " ")}
-                      </span>
+                      <OrderStatusBadge status={order.status} />
                     </td>
                   </tr>
                 ))

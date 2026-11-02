@@ -3,9 +3,11 @@ import {
   CheckCircle2,
   CircleDashed,
   Clock,
+  Package,
   PackageCheck,
   PackageOpen,
   Truck,
+  Warehouse,
   XCircle,
 } from "lucide-react"
 
@@ -14,7 +16,10 @@ import {
   type StatusBadgeTone,
 } from "@/components/shared/status-badge"
 
-import { VENDOR_ORDER_STATUS_LABEL } from "../constants"
+import {
+  resolveVendorOrderStatus,
+  vendorOrderStatusLabel,
+} from "../lib/normalize-order-status"
 import type { VendorOrderStatus } from "../types"
 
 const STATUS_BADGE: Record<
@@ -23,23 +28,33 @@ const STATUS_BADGE: Record<
 > = {
   pending: { icon: Clock, tone: "warning" },
   accepted: { icon: CircleDashed, tone: "brand" },
-  preparing: { icon: PackageOpen, tone: "brand" },
-  ready_to_ship: { icon: PackageCheck, tone: "brand" },
-  in_transit: { icon: Truck, tone: "brand" },
-  received: { icon: CheckCircle2, tone: "success" },
-  partially_received: { icon: AlertTriangle, tone: "warning" },
-  exception: { icon: AlertTriangle, tone: "danger" },
-  completed: { icon: CheckCircle2, tone: "success" },
   cancelled: { icon: XCircle, tone: "neutral" },
+  preparing: { icon: PackageOpen, tone: "brand" },
+  sending_to_warehouse: { icon: Truck, tone: "brand" },
+  received_at_warehouse: { icon: Warehouse, tone: "brand" },
+  inspecting: { icon: Package, tone: "warning" },
+  accepted_at_warehouse: { icon: PackageCheck, tone: "success" },
+  partially_accepted: { icon: AlertTriangle, tone: "warning" },
+  rejected_at_warehouse: { icon: AlertTriangle, tone: "danger" },
+  packed: { icon: PackageCheck, tone: "brand" },
+  shipped: { icon: Truck, tone: "brand" },
+  out_for_delivery: { icon: Truck, tone: "brand" },
+  delivered: { icon: CheckCircle2, tone: "success" },
 }
 
-export function OrderStatusBadge({ status }: { status: VendorOrderStatus }) {
-  const badge = STATUS_BADGE[status]
+const FALLBACK_BADGE = {
+  icon: CircleDashed,
+  tone: "neutral" as const,
+}
+
+export function OrderStatusBadge({ status }: { status: string }) {
+  const resolved = resolveVendorOrderStatus(status)
+  const badge = resolved ? STATUS_BADGE[resolved] : FALLBACK_BADGE
   const Icon = badge.icon
 
   return (
     <StatusBadge icon={Icon} tone={badge.tone}>
-      {VENDOR_ORDER_STATUS_LABEL[status]}
+      {vendorOrderStatusLabel(status)}
     </StatusBadge>
   )
 }

@@ -3,16 +3,18 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 
-import type { OrderStatusScope } from "../constants"
 import { useOrderListParams } from "../hooks/use-order-list-params"
 import { useVendorOrders } from "../hooks/use-vendor-orders"
 import { formatResultRange } from "../lib/format"
 import {
   hasOrderFilters,
-  isStatusInScope,
+  listParamsForQuery,
   matchesOrderSearch,
+  matchesOrderTab,
+  matchesReturnsFilter,
+  needsClientTabFilter,
 } from "../lib/order-query"
-import type { VendorOrder, VendorOrderSort, VendorOrderStatus } from "../types"
+import type { VendorOrder, VendorOrderSort } from "../types"
 
 import { OrderDetailsDialog } from "./order-details-dialog"
 import {
@@ -20,24 +22,34 @@ import {
   OrderErrorState,
   OrderTableSkeleton,
 } from "./order-states"
+import { OrderStatusDialog } from "./order-status-dialog"
+import { OrderStatusTabs } from "./order-status-tabs"
 import { OrderTable } from "./order-table"
 import { OrderToolbar } from "./order-toolbar"
 
 type VendorOrdersViewProps = {
-  scope?: OrderStatusScope
+  variant?: "orders" | "returns"
 }
 
-export function VendorOrdersView({ scope = "all" }: VendorOrdersViewProps) {
+export function VendorOrdersView({
+  variant = "orders",
+}: VendorOrdersViewProps) {
+  const isReturns = variant === "returns"
   const [viewingId, setViewingId] = useState<string | null>(null)
-  const { query, updateQuery, clearFilters } = useOrderListParams(scope)
-  const needsClientStatusFilter = scope !== "all" && !query.status
+  const [statusOrder, setStatusOrder] = useState<VendorOrder | null>(null)
+  const { query, updateQuery, clearFilters, setTab } = useOrderListParams()
+  const clientTabFilter = !isReturns && needsClientTabFilter(query.tab)
+  const clientReturnsFilter = isReturns
 
-  const listQuery = useVendorOrders({
-    page: query.page,
-    limit: query.limit,
-    sort: query.sort,
-    status: query.status,
-  })
+  const listQuery = useVendorOrders(
+    isReturns
+      ? {
+          page: query.page,
+          limit: query.limit,
+          sort: query.sort,
+        }
+      : listParamsForQuery(query)
+  )
 
   const page = listQuery.data
 
@@ -45,7 +57,11 @@ export function VendorOrdersView({ scope = "all" }: VendorOrdersViewProps) {
     const rows = page?.items ?? []
 
     return rows.filter((order) => {
-      if (needsClientStatusFilter && !isStatusInScope(order.status, scope)) {
+      if (clientReturnsFilter && !matchesReturnsFilter(order.status)) {
+        return false
+      }
+
+      if (clientTabFilter && !matchesOrderTab(order.status, query.tab)) {
         return false
       }
 
@@ -55,7 +71,13 @@ export function VendorOrdersView({ scope = "all" }: VendorOrdersViewProps) {
 
       return true
     })
-  }, [needsClientStatusFilter, page?.items, query.search, scope])
+  }, [
+    clientReturnsFilter,
+    clientTabFilter,
+    page?.items,
+    query.search,
+    query.tab,
+  ])
 
   useEffect(() => {
     if (!page) {
@@ -69,18 +91,14 @@ export function VendorOrdersView({ scope = "all" }: VendorOrdersViewProps) {
 
   const showSkeleton = listQuery.isPending
   const isEmpty = page !== undefined && visibleOrders.length === 0
-  const filtered = hasOrderFilters(query) || scope !== "all"
+  const filtered = hasOrderFilters(query) || isReturns
   const displayTotal =
-    query.search || needsClientStatusFilter
+    query.search || clientTabFilter || clientReturnsFilter
       ? visibleOrders.length
       : page?.pagination.total
 
   const changeSearch = useCallback(
     (search: string | undefined) => updateQuery({ search, page: 1 }),
-    [updateQuery]
-  )
-  const changeStatus = useCallback(
-    (status: VendorOrderStatus | undefined) => updateQuery({ status, page: 1 }),
     [updateQuery]
   )
   const changeSort = useCallback(
@@ -90,18 +108,30 @@ export function VendorOrdersView({ scope = "all" }: VendorOrdersViewProps) {
   const openOrder = useCallback((order: VendorOrder) => {
     setViewingId(order.id)
   }, [])
+  const openStatusUpdate = useCallback((order: VendorOrder) => {
+    setStatusOrder(order)
+  }, [])
+
+  const showPaginationFooter =
+    page &&
+    page.pagination.total > 0 &&
+    !query.search &&
+    !clientTabFilter &&
+    !clientReturnsFilter
 
   return (
     <section
       className="flex w-full flex-col gap-4"
       aria-busy={listQuery.isFetching}
     >
+      {!isReturns ? (
+        <OrderStatusTabs value={query.tab} onChange={setTab} />
+      ) : null}
+
       <OrderToolbar
-        scope={scope}
         query={query}
         total={displayTotal}
         onSearch={changeSearch}
-        onStatus={changeStatus}
         onSort={changeSort}
         onClear={clearFilters}
       />
@@ -127,20 +157,27 @@ export function VendorOrdersView({ scope = "all" }: VendorOrdersViewProps) {
           </p>
         ) : null}
 
-        {page && isEmpty ? <OrderEmptyState filtered={filtered} /> : null}
+        {page && isEmpty ? (
+          <OrderEmptyState
+            filtered={filtered}
+            message={
+              isReturns
+                ? "No returned-product orders need your attention."
+                : undefined
+            }
+          />
+        ) : null}
 
         {page && !isEmpty ? (
           <OrderTable
             orders={visibleOrders}
             isRefreshing={listQuery.isFetching && !listQuery.isPending}
             onView={openOrder}
+            onUpdateStatus={openStatusUpdate}
           />
         ) : null}
 
-        {page &&
-        page.pagination.total > 0 &&
-        !query.search &&
-        !needsClientStatusFilter ? (
+        {showPaginationFooter ? (
           <footer className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-muted-foreground">
               {formatResultRange(
@@ -185,6 +222,10 @@ export function VendorOrdersView({ scope = "all" }: VendorOrdersViewProps) {
       <OrderDetailsDialog
         orderId={viewingId}
         onClose={() => setViewingId(null)}
+      />
+      <OrderStatusDialog
+        order={statusOrder}
+        onClose={() => setStatusOrder(null)}
       />
     </section>
   )

@@ -69,47 +69,29 @@ export async function getVendorOrder(
   }
 }
 
-export async function acceptVendorOrder(vendorOrderId: string) {
-  try {
-    const { data } = await api.post<ApiSuccess<VendorOrder>>(
-      `/vendor/orders/${vendorOrderId}/accept`
-    )
-    return data.data
-  } catch (error) {
-    throw toApiError(error)
-  }
+export type UpdateVendorOrderStatusPayload = {
+  status:
+    | "accepted"
+    | "cancelled"
+    | "preparing"
+    | "sending_to_warehouse"
+    | "received_returned_rejects"
 }
 
-export async function prepareVendorOrder(vendorOrderId: string) {
-  try {
-    const { data } = await api.post<ApiSuccess<VendorOrder>>(
-      `/vendor/orders/${vendorOrderId}/prepare`
-    )
-    return data.data
-  } catch (error) {
-    throw toApiError(error)
-  }
-}
-
-export async function readyVendorOrder(vendorOrderId: string) {
-  try {
-    const { data } = await api.post<ApiSuccess<VendorOrder>>(
-      `/vendor/orders/${vendorOrderId}/ready`
-    )
-    return data.data
-  } catch (error) {
-    throw toApiError(error)
-  }
-}
-
-export async function dispatchInbound(
+export async function updateVendorOrderStatus(
   vendorOrderId: string,
-  payload: { inboundCarrier: string; inboundTracking: string }
+  payload: UpdateVendorOrderStatusPayload,
+  idempotencyKey: string
 ) {
   try {
-    const { data } = await api.post<ApiSuccess<VendorOrder>>(
-      `/vendor/orders/${vendorOrderId}/inbound`,
-      payload
+    const { data } = await api.post<ApiSuccess<VendorOrderDetail>>(
+      `/vendor/orders/${vendorOrderId}/status`,
+      payload,
+      {
+        headers: {
+          "Idempotency-Key": idempotencyKey,
+        },
+      }
     )
     return data.data
   } catch (error) {

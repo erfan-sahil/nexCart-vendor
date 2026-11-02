@@ -4,7 +4,7 @@ import {
   tableFeatures,
   useTable,
 } from "@tanstack/react-table"
-import { Ellipsis, Eye } from "lucide-react"
+import { Ellipsis, Eye, RefreshCw } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -25,6 +25,8 @@ import {
 import { cn } from "@/lib/utils"
 
 import { formatItemCount, formatMoney, formatOrderDate } from "../lib/format"
+import { formatQtyProgress } from "../lib/order-progress"
+import { canUpdateOrderStatus } from "../lib/status-transitions"
 import type { VendorOrder } from "../types"
 
 import { OrderStatusBadge } from "./order-status-badge"
@@ -47,6 +49,15 @@ const columns = columnHelper.columns([
     header: "Items",
     cell: ({ row }) => formatItemCount(row.original.items.length),
   }),
+  columnHelper.display({
+    id: "progress",
+    header: "Warehouse",
+    cell: ({ row }) => (
+      <span className="text-sm text-muted-foreground">
+        {formatQtyProgress(row.original)}
+      </span>
+    ),
+  }),
   columnHelper.accessor("itemsSubtotal", {
     id: "subtotal",
     header: "Subtotal",
@@ -62,17 +73,24 @@ type OrderTableProps = {
   orders: VendorOrder[]
   isRefreshing: boolean
   onView: (order: VendorOrder) => void
+  onUpdateStatus: (order: VendorOrder) => void
 }
 
 const CELL_CLASS: Record<string, string> = {
   order: "min-w-52",
   items: "whitespace-nowrap text-muted-foreground",
+  progress: "whitespace-nowrap text-muted-foreground",
   subtotal: "whitespace-nowrap",
   updatedAt: "whitespace-nowrap text-muted-foreground",
   actions: "w-12 text-end",
 }
 
-export function OrderTable({ orders, isRefreshing, onView }: OrderTableProps) {
+export function OrderTable({
+  orders,
+  isRefreshing,
+  onView,
+  onUpdateStatus,
+}: OrderTableProps) {
   const columnsWithActions = useMemo(
     () => [
       ...columns,
@@ -80,11 +98,15 @@ export function OrderTable({ orders, isRefreshing, onView }: OrderTableProps) {
         id: "actions",
         header: () => <span className="sr-only">Actions</span>,
         cell: ({ row }) => (
-          <OrderRowActions order={row.original} onView={onView} />
+          <OrderRowActions
+            order={row.original}
+            onView={onView}
+            onUpdateStatus={onUpdateStatus}
+          />
         ),
       }),
     ],
-    [onView]
+    [onUpdateStatus, onView]
   )
 
   const table = useTable({
@@ -157,9 +179,11 @@ export function OrderTable({ orders, isRefreshing, onView }: OrderTableProps) {
 function OrderRowActions({
   order,
   onView,
+  onUpdateStatus,
 }: {
   order: VendorOrder
   onView: (order: VendorOrder) => void
+  onUpdateStatus: (order: VendorOrder) => void
 }) {
   return (
     <DropdownMenu>
@@ -176,6 +200,7 @@ function OrderRowActions({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
+        className="w-auto min-w-44"
         onClick={(event) => event.stopPropagation()}
       >
         <DropdownMenuItem
@@ -185,6 +210,15 @@ function OrderRowActions({
           <Eye />
           Details
         </DropdownMenuItem>
+        {canUpdateOrderStatus(order.status) ? (
+          <DropdownMenuItem
+            className="cursor-pointer whitespace-nowrap"
+            onSelect={() => onUpdateStatus(order)}
+          >
+            <RefreshCw />
+            Update status
+          </DropdownMenuItem>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   )
