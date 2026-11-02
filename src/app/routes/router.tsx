@@ -18,19 +18,13 @@ import { EarningsPage } from "@/pages/finance/earnings/page"
 import { LoginPage } from "@/pages/login/page"
 import { TransactionsPage } from "@/pages/finance/transactions/page"
 import { WithdrawalsPage } from "@/pages/finance/withdrawals/page"
-import { AnalyticsPage } from "@/pages/growth/analytics/page"
-import { SubscriptionPlansPage } from "@/pages/growth/subscription-plans/page"
-import { CouponsPage } from "@/pages/marketing/coupons/page"
-import { DiscountsPage } from "@/pages/marketing/discounts/page"
-import { FlashDealsPage } from "@/pages/marketing/flash-deals/page"
-import { SponsoredAdsPage } from "@/pages/marketing/sponsored-ads/page"
+import { AnalyticsPage } from "@/pages/analytics/page"
+import { DiscountsPage } from "@/pages/store/discounts/page"
 import { NotFoundPage } from "@/pages/not-found/page"
 import { OrdersPage } from "@/pages/orders/page"
 import { ReturnsPage } from "@/pages/orders/returns/page"
 import { BusinessProfilePage } from "@/pages/settings/business-profile/page"
 import { PayoutDetailsPage } from "@/pages/settings/payout-details/page"
-import { SecurityPage } from "@/pages/settings/security/page"
-import { ShippingReturnsPage } from "@/pages/settings/shipping-returns/page"
 import { InventoryPage } from "@/pages/store/inventory/page"
 import { EditProductPage } from "@/pages/store/products/edit/page"
 import { NewProductPage } from "@/pages/store/products/new/page"
@@ -44,21 +38,15 @@ const pages: Record<VendorPath, ComponentType> = {
   "/store/products": ProductsPage,
   "/store/inventory": InventoryPage,
   "/store/reviews": ReviewsPage,
+  "/store/discounts": DiscountsPage,
   "/orders": OrdersPage,
   "/orders/returns": ReturnsPage,
-  "/marketing/discounts": DiscountsPage,
-  "/marketing/coupons": CouponsPage,
-  "/marketing/flash-deals": FlashDealsPage,
-  "/marketing/sponsored-ads": SponsoredAdsPage,
   "/finance/earnings": EarningsPage,
   "/finance/transactions": TransactionsPage,
   "/finance/withdrawals": WithdrawalsPage,
-  "/growth/analytics": AnalyticsPage,
-  "/growth/subscription-plans": SubscriptionPlansPage,
+  "/analytics": AnalyticsPage,
   "/settings/business-profile": BusinessProfilePage,
-  "/settings/shipping-returns": ShippingReturnsPage,
   "/settings/payout-details": PayoutDetailsPage,
-  "/settings/security": SecurityPage,
 }
 
 function handleFor(page: NavPage): PageHandle {
