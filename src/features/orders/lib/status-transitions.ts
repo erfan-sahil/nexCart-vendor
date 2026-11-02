@@ -26,12 +26,30 @@ const TRANSITIONS: Partial<Record<VendorOrderStatus, TransitionDefinition[]>> =
     pending: [
       { status: "accepted" },
       {
+        status: "preparing",
+        description: "Accepts this order and marks it as preparing.",
+      },
+      {
+        status: "sending_to_warehouse",
+        label: "Send to warehouse",
+        description:
+          "Accepts, prepares, and creates an inbound shipment batch.",
+      },
+      {
         status: "cancelled",
         label: "Cancel order",
         description: "Cancel before you start fulfillment.",
       },
     ],
-    accepted: [{ status: "preparing", label: "Start preparing" }],
+    accepted: [
+      { status: "preparing", label: "Start preparing" },
+      {
+        status: "sending_to_warehouse",
+        label: "Send to warehouse",
+        description:
+          "Marks as preparing and creates an inbound shipment batch.",
+      },
+    ],
     preparing: [
       {
         status: "sending_to_warehouse",
