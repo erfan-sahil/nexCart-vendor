@@ -10,6 +10,9 @@ export type VendorOrderStatus =
   | "completed"
   | "cancelled"
 
+export type VendorOrderSort =
+  "createdAt" | "-createdAt" | "updatedAt" | "-updatedAt"
+
 export type VendorOrderItem = {
   variantId: string
   productId: string
@@ -48,7 +51,7 @@ export type ListVendorOrdersParams = {
   page?: number
   limit?: number
   status?: VendorOrderStatus
-  sort?: string
+  sort?: VendorOrderSort
 }
 
 export type ListVendorOrdersResult = {
@@ -57,5 +60,16 @@ export type ListVendorOrdersResult = {
     page: number
     limit: number
     total: number
+    totalPages: number
   }
 }
+
+export type OrderListQuery = {
+  page: number
+  limit: number
+  search?: string
+  status?: VendorOrderStatus
+  sort: VendorOrderSort
+}
+
+export type OrderListPatch = Partial<OrderListQuery>

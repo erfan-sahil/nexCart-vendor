@@ -20,9 +20,24 @@ export async function listVendorOrders(
       }
     )
 
+    const pagination = data.meta?.pagination as PaginationMeta | undefined
+
     return {
       items: data.data,
-      pagination: data.meta?.pagination as PaginationMeta,
+      pagination: {
+        page: pagination?.page ?? params.page ?? 1,
+        limit: pagination?.limit ?? params.limit ?? 20,
+        total: pagination?.total ?? data.data.length,
+        totalPages:
+          pagination?.totalPages ??
+          Math.max(
+            1,
+            Math.ceil(
+              (pagination?.total ?? data.data.length) /
+                (pagination?.limit ?? params.limit ?? 20)
+            )
+          ),
+      },
     }
   } catch (error) {
     throw toApiError(error)

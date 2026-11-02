@@ -1,276 +1,191 @@
-"use client"
-
-import { Loader2 } from "lucide-react"
-import { useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { ApiError } from "@/lib/api/errors"
 
-import { formatMoney, VENDOR_ORDER_STATUS_LABEL } from "../labels"
+import type { OrderStatusScope } from "../constants"
+import { useOrderListParams } from "../hooks/use-order-list-params"
+import { useVendorOrders } from "../hooks/use-vendor-orders"
+import { formatResultRange } from "../lib/format"
 import {
-  useVendorOrder,
-  useVendorOrderActions,
-  useVendorOrders,
-} from "../hooks/use-vendor-orders"
-import type { VendorOrderStatus } from "../types/vendor-orders.types"
+  hasOrderFilters,
+  isStatusInScope,
+  matchesOrderSearch,
+} from "../lib/order-query"
+import type { VendorOrder, VendorOrderSort, VendorOrderStatus } from "../types"
+
+import { OrderDetailsDialog } from "./order-details-dialog"
+import {
+  OrderEmptyState,
+  OrderErrorState,
+  OrderTableSkeleton,
+} from "./order-states"
+import { OrderTable } from "./order-table"
+import { OrderToolbar } from "./order-toolbar"
 
 type VendorOrdersViewProps = {
-  title: string
-  description: string
-  statusFilter?: VendorOrderStatus
-  processingOnly?: boolean
-  shippedOnly?: boolean
+  scope?: OrderStatusScope
 }
 
-const SHIPPED_STATUSES: VendorOrderStatus[] = [
-  "in_transit",
-  "received",
-  "partially_received",
-  "exception",
-]
+export function VendorOrdersView({ scope = "all" }: VendorOrdersViewProps) {
+  const [viewingId, setViewingId] = useState<string | null>(null)
+  const { query, updateQuery, clearFilters } = useOrderListParams(scope)
+  const needsClientStatusFilter = scope !== "all" && !query.status
 
-const PROCESSING_STATUSES: VendorOrderStatus[] = [
-  "accepted",
-  "preparing",
-  "ready_to_ship",
-]
-
-function OrderDetailDialog({
-  orderId,
-  open,
-  onOpenChange,
-}: {
-  orderId: string | null
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}) {
-  const detail = useVendorOrder(orderId ?? "")
-  const actions = useVendorOrderActions()
-  const order = detail.data
-  const [carrier, setCarrier] = useState("")
-  const [tracking, setTracking] = useState("")
-  const busy =
-    actions.accept.isPending ||
-    actions.prepare.isPending ||
-    actions.ready.isPending ||
-    actions.dispatchInbound.isPending
-  const [error, setError] = useState<string | null>(null)
-
-  const run = async (fn: () => Promise<unknown>) => {
-    setError(null)
-    try {
-      await fn()
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Action failed.")
-    }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {order?.vendorOrderNumber ?? "Vendor order"}
-          </DialogTitle>
-        </DialogHeader>
-        {detail.isLoading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="size-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : order ? (
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Parent {order.orderNumber} ·{" "}
-              {VENDOR_ORDER_STATUS_LABEL[order.status] ?? order.status}
-            </p>
-            <ul className="divide-y rounded-md border">
-              {order.items.map((item) => (
-                <li
-                  key={item.sku}
-                  className="flex justify-between gap-3 px-3 py-2 text-sm"
-                >
-                  <span>
-                    {item.productName} × {item.quantity}
-                  </span>
-                  <span>{formatMoney(item.lineTotal)}</span>
-                </li>
-              ))}
-            </ul>
-            <p className="text-sm font-medium">
-              Subtotal {formatMoney(order.itemsSubtotal)}
-            </p>
-            {error ? <p className="text-sm text-destructive">{error}</p> : null}
-            <div className="flex flex-wrap gap-2">
-              {order.status === "pending" ? (
-                <Button
-                  disabled={busy}
-                  onClick={() =>
-                    run(() => actions.accept.mutateAsync(order.id))
-                  }
-                >
-                  Accept
-                </Button>
-              ) : null}
-              {order.status === "accepted" ? (
-                <Button
-                  disabled={busy}
-                  onClick={() =>
-                    run(() => actions.prepare.mutateAsync(order.id))
-                  }
-                >
-                  Start preparing
-                </Button>
-              ) : null}
-              {order.status === "preparing" ? (
-                <Button
-                  disabled={busy}
-                  onClick={() => run(() => actions.ready.mutateAsync(order.id))}
-                >
-                  Mark ready to ship
-                </Button>
-              ) : null}
-              {order.status === "ready_to_ship" ? (
-                <div className="flex w-full flex-col gap-2">
-                  <Input
-                    placeholder="Courier name"
-                    value={carrier}
-                    onChange={(e) => setCarrier(e.target.value)}
-                  />
-                  <Input
-                    placeholder="Tracking number"
-                    value={tracking}
-                    onChange={(e) => setTracking(e.target.value)}
-                  />
-                  <Button
-                    disabled={busy || !carrier.trim() || !tracking.trim()}
-                    onClick={() =>
-                      run(() =>
-                        actions.dispatchInbound.mutateAsync({
-                          vendorOrderId: order.id,
-                          inboundCarrier: carrier.trim(),
-                          inboundTracking: tracking.trim(),
-                        })
-                      )
-                    }
-                  >
-                    Dispatch to warehouse
-                  </Button>
-                </div>
-              ) : null}
-            </div>
-          </div>
-        ) : null}
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-export function VendorOrdersView({
-  title,
-  description,
-  statusFilter,
-  processingOnly,
-  shippedOnly,
-}: VendorOrdersViewProps) {
   const listQuery = useVendorOrders({
-    limit: 50,
-    sort: "-createdAt",
-    status: statusFilter,
+    page: query.page,
+    limit: query.limit,
+    sort: query.sort,
+    status: query.status,
   })
-  const [selectedId, setSelectedId] = useState<string | null>(null)
 
-  const items = useMemo(() => {
-    const rows = listQuery.data?.items ?? []
-    if (!processingOnly && !shippedOnly) return rows
-    if (processingOnly) {
-      return rows.filter((row) => PROCESSING_STATUSES.includes(row.status))
+  const page = listQuery.data
+
+  const visibleOrders = useMemo(() => {
+    const rows = page?.items ?? []
+
+    return rows.filter((order) => {
+      if (needsClientStatusFilter && !isStatusInScope(order.status, scope)) {
+        return false
+      }
+
+      if (query.search && !matchesOrderSearch(order, query.search)) {
+        return false
+      }
+
+      return true
+    })
+  }, [needsClientStatusFilter, page?.items, query.search, scope])
+
+  useEffect(() => {
+    if (!page) {
+      return
     }
-    return rows.filter((row) => SHIPPED_STATUSES.includes(row.status))
-  }, [listQuery.data?.items, processingOnly, shippedOnly])
+
+    if (query.page > 1 && query.page > page.pagination.totalPages) {
+      updateQuery({ page: Math.max(page.pagination.totalPages, 1) })
+    }
+  }, [page, query.page, updateQuery])
+
+  const showSkeleton = listQuery.isPending
+  const isEmpty = page !== undefined && visibleOrders.length === 0
+  const filtered = hasOrderFilters(query) || scope !== "all"
+  const displayTotal =
+    query.search || needsClientStatusFilter
+      ? visibleOrders.length
+      : page?.pagination.total
+
+  const changeSearch = useCallback(
+    (search: string | undefined) => updateQuery({ search, page: 1 }),
+    [updateQuery]
+  )
+  const changeStatus = useCallback(
+    (status: VendorOrderStatus | undefined) => updateQuery({ status, page: 1 }),
+    [updateQuery]
+  )
+  const changeSort = useCallback(
+    (sort: VendorOrderSort) => updateQuery({ sort, page: 1 }),
+    [updateQuery]
+  )
+  const openOrder = useCallback((order: VendorOrder) => {
+    setViewingId(order.id)
+  }, [])
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-semibold tracking-tight">
-          {title}
-        </h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          {description}
-        </p>
+    <section
+      className="flex w-full flex-col gap-4"
+      aria-busy={listQuery.isFetching}
+    >
+      <OrderToolbar
+        scope={scope}
+        query={query}
+        total={displayTotal}
+        onSearch={changeSearch}
+        onStatus={changeStatus}
+        onSort={changeSort}
+        onClear={clearFilters}
+      />
+
+      <div className="overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-sm">
+        {showSkeleton ? <OrderTableSkeleton /> : null}
+
+        {listQuery.isError && !page ? (
+          <OrderErrorState
+            error={listQuery.error}
+            onRetry={() => {
+              void listQuery.refetch()
+            }}
+          />
+        ) : null}
+
+        {listQuery.isError && page ? (
+          <p
+            role="alert"
+            className="border-b border-border px-4 py-2 text-sm text-destructive"
+          >
+            The latest order list could not be refreshed.
+          </p>
+        ) : null}
+
+        {page && isEmpty ? <OrderEmptyState filtered={filtered} /> : null}
+
+        {page && !isEmpty ? (
+          <OrderTable
+            orders={visibleOrders}
+            isRefreshing={listQuery.isFetching && !listQuery.isPending}
+            onView={openOrder}
+          />
+        ) : null}
+
+        {page &&
+        page.pagination.total > 0 &&
+        !query.search &&
+        !needsClientStatusFilter ? (
+          <footer className="flex flex-col gap-3 border-t border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-muted-foreground">
+              {formatResultRange(
+                page.pagination.page,
+                page.pagination.limit,
+                page.pagination.total
+              )}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={query.page <= 1 || listQuery.isFetching}
+                onClick={() => updateQuery({ page: query.page - 1 })}
+              >
+                <ChevronLeft />
+                Previous
+              </Button>
+              <p className="min-w-16 text-center text-xs text-muted-foreground">
+                {page.pagination.page} /{" "}
+                {Math.max(page.pagination.totalPages, 1)}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={
+                  query.page >= page.pagination.totalPages ||
+                  listQuery.isFetching
+                }
+                onClick={() => updateQuery({ page: query.page + 1 })}
+              >
+                Next
+                <ChevronRight />
+              </Button>
+            </div>
+          </footer>
+        ) : null}
       </div>
 
-      {listQuery.isLoading ? (
-        <div className="flex justify-center py-16">
-          <Loader2 className="size-8 animate-spin text-muted-foreground" />
-        </div>
-      ) : (
-        <div className="rounded-xl border bg-card shadow-sm">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Order</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Subtotal</TableHead>
-                <TableHead className="text-right">Updated</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={4}
-                    className="py-10 text-center text-muted-foreground"
-                  >
-                    No orders in this view yet.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                items.map((order) => (
-                  <TableRow
-                    key={order.id}
-                    className="cursor-pointer"
-                    onClick={() => setSelectedId(order.id)}
-                  >
-                    <TableCell className="font-medium">
-                      {order.vendorOrderNumber}
-                    </TableCell>
-                    <TableCell>
-                      {VENDOR_ORDER_STATUS_LABEL[order.status] ?? order.status}
-                    </TableCell>
-                    <TableCell>{formatMoney(order.itemsSubtotal)}</TableCell>
-                    <TableCell className="text-right text-muted-foreground">
-                      {new Date(order.updatedAt).toLocaleString()}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-
-      <OrderDetailDialog
-        orderId={selectedId}
-        open={selectedId !== null}
-        onOpenChange={(open) => {
-          if (!open) setSelectedId(null)
-        }}
+      <OrderDetailsDialog
+        orderId={viewingId}
+        onClose={() => setViewingId(null)}
       />
-    </div>
+    </section>
   )
 }
