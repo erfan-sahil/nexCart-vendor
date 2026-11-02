@@ -85,3 +85,18 @@ export async function readyVendorOrder(vendorOrderId: string) {
     throw toApiError(error)
   }
 }
+
+export async function dispatchInbound(
+  vendorOrderId: string,
+  payload: { inboundCarrier: string; inboundTracking: string }
+) {
+  try {
+    const { data } = await api.post<ApiSuccess<VendorOrder>>(
+      `/vendor/orders/${vendorOrderId}/inbound`,
+      payload
+    )
+    return data.data
+  } catch (error) {
+    throw toApiError(error)
+  }
+}

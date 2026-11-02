@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react"
 import { useMemo, useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import {
   Dialog,
   DialogContent,
@@ -33,7 +34,15 @@ type VendorOrdersViewProps = {
   description: string
   statusFilter?: VendorOrderStatus
   processingOnly?: boolean
+  shippedOnly?: boolean
 }
+
+const SHIPPED_STATUSES: VendorOrderStatus[] = [
+  "in_transit",
+  "received",
+  "partially_received",
+  "exception",
+]
 
 const PROCESSING_STATUSES: VendorOrderStatus[] = [
   "accepted",
@@ -53,10 +62,13 @@ function OrderDetailDialog({
   const detail = useVendorOrder(orderId ?? "")
   const actions = useVendorOrderActions()
   const order = detail.data
+  const [carrier, setCarrier] = useState("")
+  const [tracking, setTracking] = useState("")
   const busy =
     actions.accept.isPending ||
     actions.prepare.isPending ||
-    actions.ready.isPending
+    actions.ready.isPending ||
+    actions.dispatchInbound.isPending
   const [error, setError] = useState<string | null>(null)
 
   const run = async (fn: () => Promise<unknown>) => {
@@ -132,6 +144,34 @@ function OrderDetailDialog({
                   Mark ready to ship
                 </Button>
               ) : null}
+              {order.status === "ready_to_ship" ? (
+                <div className="flex w-full flex-col gap-2">
+                  <Input
+                    placeholder="Courier name"
+                    value={carrier}
+                    onChange={(e) => setCarrier(e.target.value)}
+                  />
+                  <Input
+                    placeholder="Tracking number"
+                    value={tracking}
+                    onChange={(e) => setTracking(e.target.value)}
+                  />
+                  <Button
+                    disabled={busy || !carrier.trim() || !tracking.trim()}
+                    onClick={() =>
+                      run(() =>
+                        actions.dispatchInbound.mutateAsync({
+                          vendorOrderId: order.id,
+                          inboundCarrier: carrier.trim(),
+                          inboundTracking: tracking.trim(),
+                        })
+                      )
+                    }
+                  >
+                    Dispatch to warehouse
+                  </Button>
+                </div>
+              ) : null}
             </div>
           </div>
         ) : null}
@@ -145,6 +185,7 @@ export function VendorOrdersView({
   description,
   statusFilter,
   processingOnly,
+  shippedOnly,
 }: VendorOrdersViewProps) {
   const listQuery = useVendorOrders({
     limit: 50,
@@ -155,9 +196,12 @@ export function VendorOrdersView({
 
   const items = useMemo(() => {
     const rows = listQuery.data?.items ?? []
-    if (!processingOnly) return rows
-    return rows.filter((row) => PROCESSING_STATUSES.includes(row.status))
-  }, [listQuery.data?.items, processingOnly])
+    if (!processingOnly && !shippedOnly) return rows
+    if (processingOnly) {
+      return rows.filter((row) => PROCESSING_STATUSES.includes(row.status))
+    }
+    return rows.filter((row) => SHIPPED_STATUSES.includes(row.status))
+  }, [listQuery.data?.items, processingOnly, shippedOnly])
 
   return (
     <div className="space-y-6">

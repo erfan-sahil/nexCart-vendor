@@ -7,6 +7,7 @@ import {
 
 import {
   acceptVendorOrder,
+  dispatchInbound,
   getVendorOrder,
   getVendorOrderSummary,
   listVendorOrders,
@@ -63,5 +64,18 @@ export function useVendorOrderActions() {
     onSuccess: invalidate,
   })
 
-  return { accept, prepare, ready }
+  const dispatchInboundMutation = useMutation({
+    mutationFn: ({
+      vendorOrderId,
+      inboundCarrier,
+      inboundTracking,
+    }: {
+      vendorOrderId: string
+      inboundCarrier: string
+      inboundTracking: string
+    }) => dispatchInbound(vendorOrderId, { inboundCarrier, inboundTracking }),
+    onSuccess: invalidate,
+  })
+
+  return { accept, prepare, ready, dispatchInbound: dispatchInboundMutation }
 }

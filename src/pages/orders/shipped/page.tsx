@@ -1,5 +1,11 @@
-import { PagePlaceholder } from "@/components/shared"
+import { VendorOrdersView } from "@/features/orders"
 
 export function ShippedPage() {
-  return <PagePlaceholder />
+  return (
+    <VendorOrdersView
+      title="Inbound shipments"
+      description="Orders you have sent toward the NexCart warehouse."
+      shippedOnly
+    />
+  )
 }
