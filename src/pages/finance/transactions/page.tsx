@@ -1,5 +1,5 @@
-import { PagePlaceholder } from "@/components/shared"
+import { VendorTransactionsView } from "@/features/finance/components/vendor-transactions-view"
 
 export function TransactionsPage() {
-  return <PagePlaceholder />
+  return <VendorTransactionsView />
 }

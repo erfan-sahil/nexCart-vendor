@@ -1,5 +1,5 @@
-import { PagePlaceholder } from "@/components/shared"
+import { VendorEarningsView } from "@/features/finance/components/vendor-earnings-view"
 
 export function EarningsPage() {
-  return <PagePlaceholder />
+  return <VendorEarningsView />
 }

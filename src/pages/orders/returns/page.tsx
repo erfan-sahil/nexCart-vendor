@@ -1,5 +1,5 @@
-import { PagePlaceholder } from "@/components/shared"
+import { VendorOrdersView } from "@/features/orders"
 
 export function ReturnsPage() {
-  return <PagePlaceholder />
+  return <VendorOrdersView variant="returns" />
 }
