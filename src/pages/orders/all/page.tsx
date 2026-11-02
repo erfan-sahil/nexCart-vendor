@@ -1,5 +1,10 @@
-import { PagePlaceholder } from "@/components/shared"
+import { VendorOrdersView } from "@/features/orders"
 
 export function AllOrdersPage() {
-  return <PagePlaceholder />
+  return (
+    <VendorOrdersView
+      title="All orders"
+      description="Every vendor order assigned to your store on NexCart."
+    />
+  )
 }

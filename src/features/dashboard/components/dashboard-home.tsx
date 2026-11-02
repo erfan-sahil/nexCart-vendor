@@ -1,16 +1,51 @@
-import { ORDERS, SALES, STATS, STOCK } from "../data/dashboard"
+"use client"
 
-const STATUS_CLASS = {
-  Paid: "bg-brand-soft text-brand-text",
-  Packing: "bg-secondary text-secondary-foreground",
-  "Return requested": "bg-destructive/10 text-destructive",
-} as const
+import { Loader2 } from "lucide-react"
+
+import {
+  useVendorOrderSummary,
+  useVendorOrders,
+} from "@/features/orders/hooks/use-vendor-orders"
+import { SALES, STOCK } from "../data/dashboard"
 
 export function DashboardHome() {
+  const summaryQuery = useVendorOrderSummary()
+  const recentQuery = useVendorOrders({ limit: 5, sort: "-createdAt" })
+  const summary = summaryQuery.data
+
+  const stats = [
+    {
+      label: "Total orders",
+      value: summary ? String(summary.total) : "—",
+      change: "Live",
+      hint: "All vendor orders",
+    },
+    {
+      label: "Pending",
+      value: summary ? String(summary.pending) : "—",
+      change: "Awaiting accept",
+      hint: "Need your action",
+    },
+    {
+      label: "Preparing",
+      value: summary
+        ? String(summary.accepted + summary.preparing + summary.readyToShip)
+        : "—",
+      change: "In progress",
+      hint: "Before inbound ship",
+    },
+    {
+      label: "Completed",
+      value: summary ? String(summary.completed) : "—",
+      change: "Fulfilled",
+      hint: "Delivered slices",
+    },
+  ]
+
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {STATS.map((stat) => (
+        {stats.map((stat) => (
           <article
             key={stat.label}
             className="rounded-xl border border-border bg-card p-4 text-card-foreground shadow-sm"
@@ -108,23 +143,42 @@ export function DashboardHome() {
               </tr>
             </thead>
             <tbody>
-              {ORDERS.map((order) => (
-                <tr
-                  key={order.id}
-                  className="border-b border-border last:border-0"
-                >
-                  <td className="px-4 py-3 font-medium sm:px-5">{order.id}</td>
-                  <td className="px-4 py-3">{order.buyer}</td>
-                  <td className="px-4 py-3">{order.total}</td>
-                  <td className="px-4 py-3 sm:px-5">
-                    <span
-                      className={`inline-flex rounded-md px-2 py-1 text-xs font-medium ${STATUS_CLASS[order.status]}`}
-                    >
-                      {order.status}
-                    </span>
+              {recentQuery.isLoading ? (
+                <tr>
+                  <td colSpan={4} className="px-4 py-8 text-center sm:px-5">
+                    <Loader2 className="mx-auto size-6 animate-spin text-muted-foreground" />
                   </td>
                 </tr>
-              ))}
+              ) : (recentQuery.data?.items ?? []).length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={4}
+                    className="px-4 py-8 text-center text-muted-foreground sm:px-5"
+                  >
+                    No orders yet.
+                  </td>
+                </tr>
+              ) : (
+                (recentQuery.data?.items ?? []).map((order) => (
+                  <tr
+                    key={order.id}
+                    className="border-b border-border last:border-0"
+                  >
+                    <td className="px-4 py-3 font-medium sm:px-5">
+                      {order.vendorOrderNumber}
+                    </td>
+                    <td className="px-4 py-3">—</td>
+                    <td className="px-4 py-3">
+                      BDT {order.itemsSubtotal.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 sm:px-5">
+                      <span className="inline-flex rounded-md bg-secondary px-2 py-1 text-xs font-medium text-secondary-foreground">
+                        {order.status.replace(/_/g, " ")}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
