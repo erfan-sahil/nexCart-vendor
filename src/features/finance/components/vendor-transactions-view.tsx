@@ -1,56 +1,85 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { Loader2 } from "lucide-react"
+import { useState } from "react"
 
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-
+  FinanceEmptyState,
+  FinanceErrorState,
+  FinancePagination,
+  FinanceTableSkeleton,
+} from "./finance-states"
+import { TransactionDetailsDialog } from "./transaction-details-dialog"
+import { TransactionTable } from "./transaction-table"
 import { listWalletTransactions } from "../services/vendor-finance.api"
+import type { LedgerRow } from "../services/vendor-finance.api"
+
+const PAGE_SIZE = 20
 
 export function VendorTransactionsView() {
+  const [page, setPage] = useState(1)
+  const [selected, setSelected] = useState<LedgerRow | null>(null)
+
   const query = useQuery({
-    queryKey: ["vendor", "wallet", "transactions"],
-    queryFn: () => listWalletTransactions(1, 50),
+    queryKey: ["vendor", "wallet", "transactions", page],
+    queryFn: () => listWalletTransactions(page, PAGE_SIZE),
   })
 
-  if (query.isLoading) {
-    return (
-      <div className="flex justify-center py-16">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" />
-      </div>
-    )
-  }
+  const items = query.data?.items ?? []
+  const pagination = query.data?.pagination
+  const total = pagination?.total ?? items.length
+  const totalPages = pagination?.totalPages ?? 1
 
   return (
-    <div className="space-y-4 p-6">
-      <h1 className="text-2xl font-semibold">Transactions</h1>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Type</TableHead>
-            <TableHead>Account</TableHead>
-            <TableHead>Amount</TableHead>
-            <TableHead>Date</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {(query.data?.items ?? []).map((row) => (
-            <TableRow key={row.id}>
-              <TableCell>{row.type}</TableCell>
-              <TableCell>{row.account}</TableCell>
-              <TableCell>৳{row.amount.toFixed(2)}</TableCell>
-              <TableCell>{new Date(row.createdAt).toLocaleString()}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-6">
+      <header>
+        <h1 className="text-2xl font-semibold tracking-tight">Transactions</h1>
+        <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+          Ledger history for sales, commissions, settlements, refunds, and
+          withdrawals. Select a row to view full details.
+        </p>
+      </header>
+
+      <div className="overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-sm">
+        {query.isPending && !query.data ? (
+          <FinanceTableSkeleton />
+        ) : query.isError ? (
+          <FinanceErrorState
+            title="Could not load transactions"
+            error={query.error}
+            onRetry={() => void query.refetch()}
+          />
+        ) : items.length === 0 ? (
+          <FinanceEmptyState
+            title="No transactions yet"
+            description="When orders are fulfilled and earnings post to your wallet, they will appear here."
+          />
+        ) : (
+          <>
+            <TransactionTable
+              rows={items}
+              isRefreshing={query.isFetching && !query.isPending}
+              onView={setSelected}
+            />
+
+            <div className="border-t border-border px-4 py-3">
+              <FinancePagination
+                page={page}
+                totalPages={totalPages}
+                total={total}
+                limit={PAGE_SIZE}
+                disabled={query.isFetching}
+                onPageChange={setPage}
+              />
+            </div>
+          </>
+        )}
+      </div>
+
+      <TransactionDetailsDialog
+        transaction={selected}
+        onClose={() => setSelected(null)}
+      />
     </div>
   )
 }
