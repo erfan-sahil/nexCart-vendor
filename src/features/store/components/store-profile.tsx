@@ -18,7 +18,7 @@ import { StoreProfileForm } from "./store-profile-form"
 
 function StoreProfileSkeleton() {
   return (
-    <div className="flex flex-col gap-4" aria-hidden="true">
+    <div className="flex w-full flex-col gap-4" aria-hidden="true">
       <div className="h-56 animate-pulse rounded-xl bg-muted" />
       <div className="h-96 animate-pulse rounded-xl bg-muted" />
     </div>
@@ -39,7 +39,7 @@ function StoreProfileError({
 
   return (
     <div
-      className="rounded-xl border border-border bg-card px-4 py-16 text-center"
+      className="w-full rounded-xl border border-border bg-card px-4 py-16 text-center"
       role="alert"
     >
       <p className="text-sm font-medium">Could not load the store</p>
@@ -60,9 +60,9 @@ function StoreProfileError({
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-muted/60 px-3 py-2">
+    <div className="rounded-lg bg-muted/60 px-3 py-2.5">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1 text-sm font-medium">{value}</p>
+      <p className="mt-1 truncate text-sm font-medium">{value}</p>
     </div>
   )
 }
@@ -74,38 +74,42 @@ function StoreOverview({ store }: { store: VendorStore }) {
 
   return (
     <section className="overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-sm">
-      <div className="relative h-36 bg-muted sm:h-48">
+      <div className="relative h-36 bg-muted sm:h-44">
         {banner ? (
           <img src={banner} alt="" className="size-full object-cover" />
         ) : null}
       </div>
       <div className="px-4 pb-4 sm:px-5">
-        <div className="-mt-8 flex items-end gap-3">
-          <div className="size-16 overflow-hidden rounded-xl border-4 border-card bg-muted">
-            {logo ? (
-              <img src={logo} alt="" className="size-full object-cover" />
-            ) : null}
+        <div className="-mt-8 flex flex-col gap-3 sm:-mt-10 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex min-w-0 items-end gap-3">
+            <div className="size-16 shrink-0 overflow-hidden rounded-xl border-4 border-card bg-muted sm:size-20">
+              {logo ? (
+                <img src={logo} alt="" className="size-full object-cover" />
+              ) : null}
+            </div>
+            <div className="min-w-0 pb-0.5">
+              <h2 className="truncate text-lg font-medium sm:text-xl">
+                {store.name}
+              </h2>
+              <p className="truncate text-sm text-muted-foreground">
+                /{store.slug}
+              </p>
+            </div>
           </div>
-          <div className="min-w-0 pb-1">
-            <h2 className="truncate text-lg font-medium">{store.name}</h2>
-            <p className="truncate text-sm text-muted-foreground">
-              /{store.slug}
-            </p>
-          </div>
-        </div>
 
-        <div className="mt-3 flex flex-wrap gap-2">
-          {store.isSuspended ? (
-            <StatusBadge icon={ShieldAlert} tone="danger">
-              Suspended
+          <div className="flex flex-wrap gap-2 pb-0.5">
+            {store.isSuspended ? (
+              <StatusBadge icon={ShieldAlert} tone="danger">
+                Suspended
+              </StatusBadge>
+            ) : null}
+            <StatusBadge
+              icon={store.isActive ? CircleCheck : CircleOff}
+              tone={store.isActive ? "success" : "neutral"}
+            >
+              {store.isActive ? "Open" : "Closed"}
             </StatusBadge>
-          ) : null}
-          <StatusBadge
-            icon={store.isActive ? CircleCheck : CircleOff}
-            tone={store.isActive ? "success" : "neutral"}
-          >
-            {store.isActive ? "Open" : "Closed"}
-          </StatusBadge>
+          </div>
         </div>
 
         {store.isSuspended ? (
@@ -115,7 +119,7 @@ function StoreOverview({ store }: { store: VendorStore }) {
           </p>
         ) : null}
 
-        <dl className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
           <Metric
             label="Rating"
             value={formatRating(store.rating.average, store.rating.count)}
@@ -150,7 +154,7 @@ export function StoreProfile() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
+    <div className="flex w-full flex-col gap-4">
       <StoreOverview store={store.data} />
       <StoreProfileForm store={store.data} />
     </div>

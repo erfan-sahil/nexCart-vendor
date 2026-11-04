@@ -104,16 +104,12 @@ export function StoreMediaField({
         disabled={disabled}
         onChange={(event) => onSelected(event.target.files)}
       />
-      <div
-        className={
-          shape === "logo" ? "flex items-end gap-3" : "flex flex-col gap-3"
-        }
-      >
+      <div className="flex flex-col gap-3">
         <div
           className={
             shape === "logo"
-              ? "size-28 overflow-hidden rounded-xl border border-border bg-muted"
-              : "h-36 overflow-hidden rounded-xl border border-border bg-muted sm:h-44"
+              ? "size-36 overflow-hidden rounded-xl border border-border bg-muted sm:size-44"
+              : "h-36 w-full overflow-hidden rounded-xl border border-border bg-muted sm:h-44"
           }
         >
           {src ? (
