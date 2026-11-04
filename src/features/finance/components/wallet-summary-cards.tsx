@@ -62,7 +62,7 @@ export function WalletSummaryCards({ balances }: WalletSummaryCardsProps) {
       tone: "info",
       label: "Withdrawn",
       value: formatBdt(balances.withdrawnBalance),
-      detail: "Paid out to your payout method",
+      detail: "Approved by admin through paid out",
     },
   ]
 
