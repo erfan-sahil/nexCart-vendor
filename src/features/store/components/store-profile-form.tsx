@@ -10,13 +10,6 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { useCategoryTree } from "@/features/products/hooks"
@@ -25,7 +18,6 @@ import { ApiError } from "@/lib/api/errors"
 import { useUpdateStore } from "../hooks"
 import { storeCategoryOptions } from "../lib/categories"
 import {
-  payoutFieldsDirty,
   storeFieldErrors,
   toFormValues,
   toUpdatePayload,
@@ -83,7 +75,6 @@ export function StoreProfileForm({ store }: StoreProfileFormProps) {
     resolver: zodResolver(storeProfileSchema),
     defaultValues: toFormValues(store),
   })
-  const payoutMethod = useWatch({ control: form.control, name: "payoutMethod" })
   const categoryIds = useWatch({ control: form.control, name: "categoryIds" })
   const saving = updateStore.isPending
   const imageDirty = Boolean(
@@ -126,9 +117,6 @@ export function StoreProfileForm({ store }: StoreProfileFormProps) {
         payload: toUpdatePayload(values, {
           clearLogo: removeLogo && !logoFile,
           clearBanner: removeBanner && !bannerFile,
-          includePayout: payoutFieldsDirty(
-            (name) => form.getFieldState(name).isDirty
-          ),
         }),
         logo: logoFile,
         banner: bannerFile,
@@ -474,190 +462,6 @@ export function StoreProfileForm({ store }: StoreProfileFormProps) {
             </label>
           )}
         />
-      </Section>
-
-      <Separator />
-
-      <Section
-        title="Payout account"
-        description="Bank or mobile account used when this store withdraws earnings."
-      >
-        <Field
-          data-invalid={form.formState.errors.payoutMethod ? true : undefined}
-        >
-          <FieldLabel htmlFor="store-payout-method">Method</FieldLabel>
-          <Controller
-            name="payoutMethod"
-            control={form.control}
-            render={({ field }) => (
-              <Select
-                value={field.value || "unset"}
-                disabled={saving}
-                onValueChange={(value) => {
-                  field.onChange(value === "unset" ? "" : value)
-                  setNotice(null)
-                }}
-              >
-                <SelectTrigger
-                  id="store-payout-method"
-                  className="w-full"
-                  aria-invalid={Boolean(form.formState.errors.payoutMethod)}
-                >
-                  <SelectValue placeholder="No payout account" />
-                </SelectTrigger>
-                <SelectContent>
-                  {store.payout ? null : (
-                    <SelectItem value="unset">No payout account</SelectItem>
-                  )}
-                  <SelectItem value="bank">Bank account</SelectItem>
-                  <SelectItem value="mobile">Mobile wallet</SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-          />
-          <FieldError>
-            {messageOf(form.formState.errors.payoutMethod)}
-          </FieldError>
-        </Field>
-
-        {payoutMethod ? (
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field
-              className="sm:col-span-2"
-              data-invalid={
-                form.formState.errors.accountHolderName ? true : undefined
-              }
-            >
-              <FieldLabel htmlFor="store-account-holder">
-                Account holder
-              </FieldLabel>
-              <Input
-                id="store-account-holder"
-                autoComplete="name"
-                aria-invalid={Boolean(form.formState.errors.accountHolderName)}
-                disabled={saving}
-                {...form.register("accountHolderName")}
-              />
-              <FieldError>
-                {messageOf(form.formState.errors.accountHolderName)}
-              </FieldError>
-            </Field>
-            {payoutMethod === "bank" ? (
-              <>
-                <Field
-                  data-invalid={
-                    form.formState.errors.bankName ? true : undefined
-                  }
-                >
-                  <FieldLabel htmlFor="store-bank-name">Bank</FieldLabel>
-                  <Input
-                    id="store-bank-name"
-                    aria-invalid={Boolean(form.formState.errors.bankName)}
-                    disabled={saving}
-                    {...form.register("bankName")}
-                  />
-                  <FieldError>
-                    {messageOf(form.formState.errors.bankName)}
-                  </FieldError>
-                </Field>
-                <Field
-                  data-invalid={
-                    form.formState.errors.branchName ? true : undefined
-                  }
-                >
-                  <FieldLabel htmlFor="store-branch-name">Branch</FieldLabel>
-                  <Input
-                    id="store-branch-name"
-                    aria-invalid={Boolean(form.formState.errors.branchName)}
-                    disabled={saving}
-                    {...form.register("branchName")}
-                  />
-                  <FieldError>
-                    {messageOf(form.formState.errors.branchName)}
-                  </FieldError>
-                </Field>
-                <Field
-                  data-invalid={
-                    form.formState.errors.accountNumber ? true : undefined
-                  }
-                >
-                  <FieldLabel htmlFor="store-account-number">
-                    Account number
-                  </FieldLabel>
-                  <Input
-                    id="store-account-number"
-                    aria-invalid={Boolean(form.formState.errors.accountNumber)}
-                    disabled={saving}
-                    {...form.register("accountNumber")}
-                  />
-                  <FieldError>
-                    {messageOf(form.formState.errors.accountNumber)}
-                  </FieldError>
-                </Field>
-                <Field
-                  data-invalid={
-                    form.formState.errors.routingNumber ? true : undefined
-                  }
-                >
-                  <FieldLabel htmlFor="store-routing-number">
-                    Routing number
-                  </FieldLabel>
-                  <Input
-                    id="store-routing-number"
-                    aria-invalid={Boolean(form.formState.errors.routingNumber)}
-                    disabled={saving}
-                    {...form.register("routingNumber")}
-                  />
-                  <FieldDescription>Optional.</FieldDescription>
-                  <FieldError>
-                    {messageOf(form.formState.errors.routingNumber)}
-                  </FieldError>
-                </Field>
-              </>
-            ) : (
-              <>
-                <Field
-                  data-invalid={
-                    form.formState.errors.provider ? true : undefined
-                  }
-                >
-                  <FieldLabel htmlFor="store-provider">Provider</FieldLabel>
-                  <Input
-                    id="store-provider"
-                    aria-invalid={Boolean(form.formState.errors.provider)}
-                    disabled={saving}
-                    {...form.register("provider")}
-                  />
-                  <FieldError>
-                    {messageOf(form.formState.errors.provider)}
-                  </FieldError>
-                </Field>
-                <Field
-                  data-invalid={
-                    form.formState.errors.accountNumber ? true : undefined
-                  }
-                >
-                  <FieldLabel htmlFor="store-mobile-number">
-                    Account number
-                  </FieldLabel>
-                  <Input
-                    id="store-mobile-number"
-                    aria-invalid={Boolean(form.formState.errors.accountNumber)}
-                    disabled={saving}
-                    {...form.register("accountNumber")}
-                  />
-                  <FieldError>
-                    {messageOf(form.formState.errors.accountNumber)}
-                  </FieldError>
-                </Field>
-              </>
-            )}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            No payout account is saved for this store.
-          </p>
-        )}
       </Section>
 
       {rootError ? (

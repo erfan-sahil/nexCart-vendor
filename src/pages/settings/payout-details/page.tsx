@@ -1,5 +1,5 @@
-import { PagePlaceholder } from "@/components/shared"
+import { PayoutDetails } from "@/features/payout-details"
 
 export function PayoutDetailsPage() {
-  return <PagePlaceholder />
+  return <PayoutDetails />
 }

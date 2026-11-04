@@ -3,16 +3,6 @@ import { ApiError } from "@/lib/api/errors"
 import type { StoreProfileFormValues } from "./store-form-schema"
 import type { UpdateStorePayload, VendorStore } from "../types"
 
-const PAYOUT_FIELDS = [
-  "payoutMethod",
-  "accountHolderName",
-  "bankName",
-  "branchName",
-  "routingNumber",
-  "provider",
-  "accountNumber",
-] as const satisfies readonly (keyof StoreProfileFormValues)[]
-
 const PATH_TO_FIELD: Record<string, keyof StoreProfileFormValues> = {
   name: "name",
   slug: "slug",
@@ -29,18 +19,9 @@ const PATH_TO_FIELD: Record<string, keyof StoreProfileFormValues> = {
   returnPolicy: "returnPolicy",
   shippingPolicy: "shippingPolicy",
   isActive: "isActive",
-  "payout.method": "payoutMethod",
-  "payout.accountHolderName": "accountHolderName",
-  "payout.bankName": "bankName",
-  "payout.branchName": "branchName",
-  "payout.routingNumber": "routingNumber",
-  "payout.provider": "provider",
-  "payout.accountNumber": "accountNumber",
 }
 
 export function toFormValues(store: VendorStore): StoreProfileFormValues {
-  const payout = store.payout
-
   return {
     name: store.name,
     slug: store.slug,
@@ -57,20 +38,7 @@ export function toFormValues(store: VendorStore): StoreProfileFormValues {
     returnPolicy: store.returnPolicy,
     shippingPolicy: store.shippingPolicy,
     isActive: store.isActive,
-    payoutMethod: payout?.method ?? "",
-    accountHolderName: payout?.accountHolderName ?? "",
-    bankName: payout?.method === "bank" ? payout.bankName : "",
-    branchName: payout?.method === "bank" ? payout.branchName : "",
-    routingNumber: payout?.method === "bank" ? payout.routingNumber : "",
-    provider: payout?.method === "mobile" ? payout.provider : "",
-    accountNumber: payout?.accountNumber ?? "",
   }
-}
-
-export function payoutFieldsDirty(
-  isDirty: (name: (typeof PAYOUT_FIELDS)[number]) => boolean
-) {
-  return PAYOUT_FIELDS.some((name) => isDirty(name))
 }
 
 export function toUpdatePayload(
@@ -78,7 +46,6 @@ export function toUpdatePayload(
   options: {
     clearLogo: boolean
     clearBanner: boolean
-    includePayout: boolean
   }
 ): UpdateStorePayload {
   const payload: UpdateStorePayload = {
@@ -109,32 +76,6 @@ export function toUpdatePayload(
 
   if (options.clearBanner) {
     payload.banner = ""
-  }
-
-  if (!options.includePayout || !values.payoutMethod) {
-    return payload
-  }
-
-  if (values.payoutMethod === "bank") {
-    const routingNumber = values.routingNumber.trim()
-
-    payload.payout = {
-      method: "bank",
-      accountHolderName: values.accountHolderName.trim(),
-      bankName: values.bankName.trim(),
-      accountNumber: values.accountNumber.trim(),
-      branchName: values.branchName.trim(),
-      ...(routingNumber ? { routingNumber } : {}),
-    }
-
-    return payload
-  }
-
-  payload.payout = {
-    method: "mobile",
-    accountHolderName: values.accountHolderName.trim(),
-    provider: values.provider.trim(),
-    accountNumber: values.accountNumber.trim(),
   }
 
   return payload

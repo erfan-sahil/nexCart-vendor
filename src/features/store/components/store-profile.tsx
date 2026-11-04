@@ -70,12 +70,7 @@ function Metric({ label, value }: { label: string; value: string }) {
 function StoreOverview({ store }: { store: VendorStore }) {
   const logo = store.logo ? resolveAssetUrl(store.logo) : ""
   const banner = store.banner ? resolveAssetUrl(store.banner) : ""
-  const payout = store.payout
-  const payoutLabel = payout
-    ? payout.method === "bank"
-      ? `Bank · ${payout.bankName}`
-      : `Mobile · ${payout.provider}`
-    : "No payout account"
+  const categoryCount = formatCount(store.categories.length)
 
   return (
     <section className="overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-sm">
@@ -129,7 +124,7 @@ function StoreOverview({ store }: { store: VendorStore }) {
           <Metric label="Orders" value={formatCount(store.totalOrders)} />
           <Metric label="Sales" value={formatSales(store.totalSales)} />
           <Metric label="Joined" value={formatJoined(store.joinedAt)} />
-          <Metric label="Payout" value={payoutLabel} />
+          <Metric label="Categories" value={categoryCount} />
         </dl>
       </div>
     </section>

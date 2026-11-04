@@ -92,8 +92,10 @@ export type UpdateStorePayload = {
   payout?: UpdateStorePayout
 }
 
+export type PatchStorePayload = Partial<UpdateStorePayload>
+
 export type UpdateStoreRequest = {
-  payload: UpdateStorePayload
+  payload: PatchStorePayload
   logo: File | null
   banner: File | null
 }
