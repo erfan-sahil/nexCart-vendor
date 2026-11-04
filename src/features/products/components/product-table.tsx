@@ -72,6 +72,7 @@ const columns = columnHelper.columns([
 type ProductTableProps = {
   products: Product[]
   isRefreshing: boolean
+  caption?: string
   onView: (product: Product) => void
   onEdit: (product: Product) => void
   onDelete: (product: Product) => void
@@ -88,6 +89,7 @@ const CELL_CLASS: Record<string, string> = {
 export function ProductTable({
   products,
   isRefreshing,
+  caption = "Store products",
   onView,
   onEdit,
   onDelete,
@@ -125,7 +127,7 @@ export function ProductTable({
       )}
     >
       <Table>
-        <TableCaption className="sr-only">Store products</TableCaption>
+        <TableCaption className="sr-only">{caption}</TableCaption>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>

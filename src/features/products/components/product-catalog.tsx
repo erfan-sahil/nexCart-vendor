@@ -4,12 +4,18 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 
-import { useProductListParams, useVendorProducts } from "../hooks"
+import {
+  useDiscountListParams,
+  useProductListParams,
+  useVendorProducts,
+} from "../hooks"
 import { formatResultRange } from "../lib/format"
 import { hasProductFilters } from "../lib/product-query"
 import type {
   Product,
   ProductApprovalStatus,
+  ProductListPatch,
+  ProductListQuery,
   ProductSort,
   ProductStatus,
 } from "../types"
@@ -24,13 +30,27 @@ import { ProductDetailsDialog } from "./product-details-dialog"
 import { ProductTable } from "./product-table"
 import { ProductToolbar } from "./product-toolbar"
 
-export function ProductCatalog() {
+type CatalogVariant = "catalog" | "discounted"
+
+type ProductCatalogViewProps = {
+  variant: CatalogVariant
+  query: ProductListQuery
+  updateQuery: (patch: ProductListPatch) => void
+  clearFilters: () => void
+}
+
+function ProductCatalogView({
+  variant,
+  query,
+  updateQuery,
+  clearFilters,
+}: ProductCatalogViewProps) {
   const navigate = useNavigate()
   const [viewing, setViewing] = useState<Product | null>(null)
   const [deleting, setDeleting] = useState<Product | null>(null)
-  const { query, updateQuery, clearFilters } = useProductListParams()
   const products = useVendorProducts(query)
   const page = products.data
+  const isDiscounted = variant === "discounted"
 
   useEffect(() => {
     if (!page) {
@@ -76,13 +96,16 @@ export function ProductCatalog() {
       <ProductToolbar
         query={query}
         total={page?.pagination.total}
+        variant={variant}
         onSearch={changeSearch}
         onStatus={changeStatus}
         onApprovalStatus={changeApproval}
         onPublished={changePublished}
         onSort={changeSort}
         onClear={clearFilters}
-        onCreate={() => navigate("/store/products/new")}
+        onCreate={
+          isDiscounted ? undefined : () => navigate("/store/products/new")
+        }
       />
 
       <div className="overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-sm">
@@ -106,12 +129,17 @@ export function ProductCatalog() {
           </p>
         ) : null}
 
-        {page && isEmpty ? <ProductEmptyState filtered={filtered} /> : null}
+        {page && isEmpty ? (
+          <ProductEmptyState filtered={filtered} variant={variant} />
+        ) : null}
 
         {page && !isEmpty ? (
           <ProductTable
             products={page.items}
             isRefreshing={products.isFetching && !products.isPending}
+            caption={
+              isDiscounted ? "Discounted store products" : "Store products"
+            }
             onView={setViewing}
             onEdit={(product) => navigate(`/store/products/${product.id}/edit`)}
             onDelete={setDeleting}
@@ -170,4 +198,16 @@ export function ProductCatalog() {
       />
     </section>
   )
+}
+
+export function ProductCatalog() {
+  const params = useProductListParams()
+
+  return <ProductCatalogView variant="catalog" {...params} />
+}
+
+export function DiscountProductCatalog() {
+  const params = useDiscountListParams()
+
+  return <ProductCatalogView variant="discounted" {...params} />
 }

@@ -120,6 +120,7 @@ export type ProductListQuery = {
   status?: ProductStatus
   approvalStatus?: ProductApprovalStatus
   isPublished?: boolean
+  hasDiscount?: boolean
 }
 
 export type ProductListPatch = Partial<

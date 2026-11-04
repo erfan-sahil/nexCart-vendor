@@ -25,6 +25,9 @@ function toListParams(query: ProductListQuery) {
     ...(query.isPublished === undefined
       ? {}
       : { isPublished: String(query.isPublished) }),
+    ...(query.hasDiscount === undefined
+      ? {}
+      : { hasDiscount: String(query.hasDiscount) }),
   }
 }
 

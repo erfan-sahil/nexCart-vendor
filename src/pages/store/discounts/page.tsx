@@ -1,5 +1,5 @@
-import { PagePlaceholder } from "@/components/shared"
+import { DiscountProductCatalog } from "@/features/products"
 
 export function DiscountsPage() {
-  return <PagePlaceholder />
+  return <DiscountProductCatalog />
 }
