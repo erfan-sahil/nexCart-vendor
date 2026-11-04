@@ -7,8 +7,7 @@ import { BusinessProfileView } from "./business-profile-view"
 function BusinessProfileSkeleton() {
   return (
     <div className="flex w-full flex-col gap-4" aria-hidden="true">
-      <div className="h-40 animate-pulse rounded-xl bg-muted" />
-      <div className="h-96 animate-pulse rounded-xl bg-muted" />
+      <div className="h-64 animate-pulse rounded-xl bg-muted" />
     </div>
   )
 }

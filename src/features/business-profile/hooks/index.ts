@@ -1,1 +1,4 @@
-export { useMyBusinessProfile } from "./use-business-profile"
+export {
+  useMyBusinessProfile,
+  useUpdateBusinessRecords,
+} from "./use-business-profile"

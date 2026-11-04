@@ -23,6 +23,16 @@ export type VendorAddress = {
   country: string
 }
 
+export type VendorOptionalDocument = {
+  number: string
+  documentUrl: string
+}
+
+export type VendorTaxDocument = {
+  taxId: string
+  documentUrl: string
+}
+
 export type VendorApplication = {
   id: string
   userId: string
@@ -44,14 +54,8 @@ export type VendorApplication = {
     storeName: string
     businessType: VendorBusinessType | null
     address: VendorAddress
-    tradeLicense: {
-      number: string
-      documentUrl: string
-    } | null
-    tax: {
-      taxId: string
-      documentUrl: string
-    } | null
+    tradeLicense: VendorOptionalDocument | null
+    tax: VendorTaxDocument | null
   }
   selling: {
     categoryIds: string[]
@@ -63,4 +67,16 @@ export type VendorApplication = {
   reviewedBy: string | null
   createdAt: string
   updatedAt: string
+}
+
+export type UpdateBusinessRecordsPayload = {
+  tradeLicense?: {
+    number?: string
+    documentUrl?: string
+  } | null
+  tax?: {
+    taxId?: string
+    documentUrl?: string
+  } | null
+  address?: Partial<VendorAddress>
 }
