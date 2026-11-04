@@ -77,7 +77,8 @@ type ProductToolbarProps = {
   onPublished: (isPublished: boolean | undefined) => void
   onSort: (sort: ProductSort) => void
   onClear: () => void
-  onCreate: () => void
+  onCreate?: () => void
+  variant?: "catalog" | "discounted"
 }
 
 function isStatus(value: string): value is ProductStatus {
@@ -106,6 +107,7 @@ export function ProductToolbar({
   onSort,
   onClear,
   onCreate,
+  variant = "catalog",
 }: ProductToolbarProps) {
   const querySearch = query.search ?? ""
   const [draft, setDraft] = useState<string | null>(null)
@@ -139,15 +141,21 @@ export function ProductToolbar({
 
   const publishedValue =
     query.isPublished === undefined ? ALL : String(query.isPublished)
+  const isDiscounted = variant === "discounted"
+
+  const summaryLabel =
+    total === undefined
+      ? isDiscounted
+        ? "Discounted products"
+        : "Store products"
+      : isDiscounted
+        ? `${total} discounted ${total === 1 ? "product" : "products"}`
+        : `${total} ${total === 1 ? "product" : "products"}`
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 text-card-foreground shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
-          {total === undefined
-            ? "Store products"
-            : `${total} ${total === 1 ? "product" : "products"}`}
-        </p>
+        <p className="text-sm text-muted-foreground">{summaryLabel}</p>
         <div className="flex flex-wrap items-center gap-2">
           {filtersActive ? (
             <Button
@@ -163,10 +171,12 @@ export function ProductToolbar({
               Clear filters
             </Button>
           ) : null}
-          <Button type="button" onClick={onCreate}>
-            <Plus />
-            Add product
-          </Button>
+          {onCreate ? (
+            <Button type="button" onClick={onCreate}>
+              <Plus />
+              Add product
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -177,8 +187,12 @@ export function ProductToolbar({
           </InputGroupAddon>
           <InputGroupInput
             value={search}
-            placeholder="Search products"
-            aria-label="Search products"
+            placeholder={
+              isDiscounted ? "Search discounted products" : "Search products"
+            }
+            aria-label={
+              isDiscounted ? "Search discounted products" : "Search products"
+            }
             onChange={(event) => setDraft(event.target.value)}
           />
           {search ? (

@@ -17,16 +17,32 @@ export function ProductTableSkeleton() {
   )
 }
 
-export function ProductEmptyState({ filtered }: { filtered: boolean }) {
+export function ProductEmptyState({
+  filtered,
+  variant = "catalog",
+}: {
+  filtered: boolean
+  variant?: "catalog" | "discounted"
+}) {
+  const isDiscounted = variant === "discounted"
+
   return (
     <div className="px-4 py-16 text-center">
       <p className="text-sm font-medium">
-        {filtered ? "No matching products" : "No products yet"}
+        {filtered
+          ? isDiscounted
+            ? "No matching discounted products"
+            : "No matching products"
+          : isDiscounted
+            ? "No discounted products yet"
+            : "No products yet"}
       </p>
       <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
         {filtered
           ? "Try a different search or clear the filters."
-          : "Products you add to this store will show up here."}
+          : isDiscounted
+            ? "Products with an active variant discount will appear here."
+            : "Products you add to this store will show up here."}
       </p>
     </div>
   )

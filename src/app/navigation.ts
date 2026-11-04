@@ -57,7 +57,7 @@ export const NAV = defineNav([
         label: "Store Profile",
         path: "/store/profile",
         description:
-          "Name, images, contact, policies, and payout details for this store.",
+          "Public storefront name, images, contact, categories, and policies.",
         icon: Store,
       },
       {
@@ -155,7 +155,8 @@ export const NAV = defineNav([
         kind: "page",
         label: "Business Profile",
         path: "/settings/business-profile",
-        description: "Legal business name, tax details, and contacts.",
+        description:
+          "Verified legal identity, business registration, and tax records.",
         icon: Building2,
       },
       {

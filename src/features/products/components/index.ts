@@ -1,1 +1,1 @@
-export { ProductCatalog } from "./product-catalog"
+export { DiscountProductCatalog, ProductCatalog } from "./product-catalog"
