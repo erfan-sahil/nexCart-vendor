@@ -1,5 +1,5 @@
-import { PagePlaceholder } from "@/components/shared"
+import { StoreReviewsView } from "@/features/reviews"
 
 export function ReviewsPage() {
-  return <PagePlaceholder />
+  return <StoreReviewsView />
 }
