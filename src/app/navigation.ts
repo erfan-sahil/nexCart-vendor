@@ -143,7 +143,7 @@ export const NAV = defineNav([
     kind: "page",
     label: "Analytics",
     path: "/analytics",
-    description: "Traffic, conversion, and sales performance.",
+    description: "Sales, product, and fulfillment performance.",
     icon: BarChart3,
   },
   {
