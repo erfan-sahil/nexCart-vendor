@@ -17,6 +17,7 @@ export const VENDOR_ORDER_STATUSES = [
   "delivered",
   "delivery_failed",
   "customer_rejected",
+  "partially_rejected",
 ] as const satisfies readonly VendorOrderStatus[]
 
 /** Vendor action required (excluding awaiting accept). */
@@ -51,6 +52,7 @@ export const RETURNS_STATUSES = [
   "rejected_at_warehouse",
   "delivery_failed",
   "customer_rejected",
+  "partially_rejected",
 ] as const satisfies readonly VendorOrderStatus[]
 
 export const VENDOR_ORDER_SORTS = [
@@ -80,6 +82,16 @@ export const VENDOR_ORDER_STATUS_LABEL: Record<VendorOrderStatus, string> = {
   delivered: "Delivered",
   delivery_failed: "Delivery failed",
   customer_rejected: "Customer rejected",
+  partially_rejected: "Partially rejected",
+}
+
+export const VENDOR_RETURN_SHIPMENT_STATUS_LABEL: Record<
+  import("./types").VendorReturnShipmentStatus,
+  string
+> = {
+  pending_dispatch_to_vendor: "Pending dispatch to you",
+  in_transit_to_vendor: "In transit to you",
+  received_by_vendor: "Received by you",
 }
 
 export const INBOUND_BATCH_STATUS_LABEL: Record<
