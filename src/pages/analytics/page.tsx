@@ -1,5 +1,5 @@
-import { PagePlaceholder } from "@/components/shared"
+import { AnalyticsView } from "@/features/analytics"
 
 export function AnalyticsPage() {
-  return <PagePlaceholder />
+  return <AnalyticsView />
 }

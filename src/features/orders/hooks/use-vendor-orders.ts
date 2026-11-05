@@ -5,7 +5,11 @@ import {
   useQueryClient,
 } from "@tanstack/react-query"
 
+import { inventoryKeys } from "@/features/inventory/services"
+import { productKeys } from "@/features/products/services"
+
 import {
+  confirmVendorReturnReceipt,
   getVendorOrder,
   getVendorOrderSummary,
   listVendorOrders,
@@ -54,5 +58,17 @@ export function useVendorOrderActions() {
     },
   })
 
-  return { updateStatus }
+  const confirmVendorReturn = useMutation({
+    mutationFn: (shipmentId: string) =>
+      confirmVendorReturnReceipt(shipmentId, crypto.randomUUID()),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: vendorOrderKeys.all }),
+        queryClient.invalidateQueries({ queryKey: inventoryKeys.all }),
+        queryClient.invalidateQueries({ queryKey: productKeys.all }),
+      ])
+    },
+  })
+
+  return { updateStatus, confirmVendorReturn }
 }

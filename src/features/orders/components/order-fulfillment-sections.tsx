@@ -1,9 +1,18 @@
+import { Link } from "react-router"
+
 import {
   INBOUND_BATCH_STATUS_LABEL,
   REJECT_RETURN_STATUS_LABEL,
+  VENDOR_RETURN_SHIPMENT_STATUS_LABEL,
 } from "../constants"
 import { formatOrderDateTime } from "../lib/format"
-import type { VendorInboundBatch, VendorRejectReturn } from "../types"
+import type {
+  VendorInboundBatch,
+  VendorOrderRejectionLineSummary,
+  VendorRejectReturn,
+  VendorReturnShipment,
+  VendorReturnShipmentStatus,
+} from "../types"
 
 function humanizeReason(value: string) {
   return value
@@ -11,6 +20,13 @@ function humanizeReason(value: string) {
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ")
+}
+
+function shipmentStatusLabel(status: string) {
+  return (
+    VENDOR_RETURN_SHIPMENT_STATUS_LABEL[status as VendorReturnShipmentStatus] ??
+    status.replaceAll("_", " ")
+  )
 }
 
 export function OrderInboundBatches({
@@ -101,7 +117,11 @@ export function OrderInboundBatches({
 }
 
 export function OrderDeliveryReturnNotice({ status }: { status: string }) {
-  if (status !== "delivery_failed" && status !== "customer_rejected") {
+  if (
+    status !== "delivery_failed" &&
+    status !== "customer_rejected" &&
+    status !== "partially_rejected"
+  ) {
     return null
   }
 
@@ -111,21 +131,171 @@ export function OrderDeliveryReturnNotice({ status }: { status: string }) {
         <p className="text-sm font-medium">
           {status === "delivery_failed"
             ? "Delivery failed"
-            : "Customer rejected at delivery"}
+            : status === "partially_rejected"
+              ? "Partially rejected at delivery"
+              : "Customer rejected at delivery"}
         </p>
       </header>
       <div className="space-y-2 px-3 py-3 text-sm text-muted-foreground">
         <p>
-          This slice is returning to the NexCart warehouse. Earnings for
-          rejected items are reversed after warehouse acceptance. No vendor
-          action is required.
+          Rejected products return to the NexCart warehouse for inspection.
+          Accepted merchandise keeps earning potential; rejected merchandise is
+          adjusted on your ledger.
         </p>
         <p>
-          Refund and restock are handled by NexCart admin once the goods are
-          inspected.
+          Sellable returned products are shipped back to you. Confirm receipt
+          below when they arrive so inventory can be restored. You cannot
+          approve customer refunds or change inspection results.
+        </p>
+        <p>
+          <Link
+            to="/finance/transactions"
+            className="font-medium text-brand-text underline-offset-2 hover:underline"
+          >
+            View ledger transactions
+          </Link>
         </p>
       </div>
     </article>
+  )
+}
+
+export function OrderCustomerAcceptanceSummary({
+  summary,
+}: {
+  summary: VendorOrderRejectionLineSummary[]
+}) {
+  if (summary.length === 0 || summary.every((row) => row.rejectedQty <= 0)) {
+    return null
+  }
+
+  const accepted = summary.filter((row) => row.acceptedQty > 0)
+  const rejected = summary.filter((row) => row.rejectedQty > 0)
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      <article className="overflow-hidden rounded-lg border border-border">
+        <header className="border-b border-border bg-muted/40 px-3 py-2">
+          <p className="text-sm font-medium">Accepted by customer</p>
+        </header>
+        {accepted.length === 0 ? (
+          <p className="px-3 py-3 text-sm text-muted-foreground">None</p>
+        ) : (
+          <ul className="divide-y divide-border">
+            {accepted.map((row) => (
+              <li
+                key={`accepted-${row.variantId}`}
+                className="flex items-baseline justify-between gap-2 px-3 py-2 text-sm"
+              >
+                <div>
+                  <p className="font-medium">{row.productName}</p>
+                  <p className="text-xs text-muted-foreground">{row.sku}</p>
+                </div>
+                <span className="text-muted-foreground">
+                  Qty {row.acceptedQty}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </article>
+
+      <article className="overflow-hidden rounded-lg border border-border">
+        <header className="border-b border-border bg-muted/40 px-3 py-2">
+          <p className="text-sm font-medium">Rejected by customer</p>
+        </header>
+        {rejected.length === 0 ? (
+          <p className="px-3 py-3 text-sm text-muted-foreground">None</p>
+        ) : (
+          <ul className="divide-y divide-border">
+            {rejected.map((row) => (
+              <li
+                key={`rejected-${row.variantId}`}
+                className="flex items-baseline justify-between gap-2 px-3 py-2 text-sm"
+              >
+                <div>
+                  <p className="font-medium">{row.productName}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {row.sku}
+                    {row.disposition && row.disposition !== "pending"
+                      ? ` · ${row.disposition}`
+                      : ""}
+                  </p>
+                </div>
+                <span className="text-muted-foreground">
+                  Qty {row.rejectedQty}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </article>
+    </div>
+  )
+}
+
+export function OrderVendorReturnShipments({
+  shipments,
+}: {
+  shipments: VendorReturnShipment[]
+}) {
+  if (shipments.length === 0) {
+    return null
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {shipments.map((shipment) => (
+        <article
+          key={shipment.id}
+          className="overflow-hidden rounded-lg border border-border"
+        >
+          <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/40 px-3 py-2">
+            <p className="text-sm font-medium">Return shipment to you</p>
+            <p className="text-xs text-muted-foreground">
+              {shipmentStatusLabel(shipment.status)}
+            </p>
+          </header>
+          <ul className="divide-y divide-border">
+            {shipment.lines.map((line) => (
+              <li
+                key={`${shipment.id}-${line.variantId}`}
+                className="flex flex-wrap items-baseline justify-between gap-2 px-3 py-2 text-sm"
+              >
+                <div>
+                  <p className="font-medium">{line.productName}</p>
+                  <p className="text-xs text-muted-foreground">{line.sku}</p>
+                  {shipment.status === "received_by_vendor" ? (
+                    <p className="mt-1 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                      Inventory restored: +{line.quantity}
+                    </p>
+                  ) : null}
+                </div>
+                <span className="text-muted-foreground">
+                  Qty {line.quantity}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <footer className="space-y-1 border-t border-border px-3 py-2 text-xs text-muted-foreground">
+            {shipment.carrier || shipment.trackingNumber ? (
+              <p>
+                {shipment.carrier || "Courier"}
+                {shipment.trackingNumber ? ` · ${shipment.trackingNumber}` : ""}
+              </p>
+            ) : null}
+            <p>
+              {shipment.dispatchedAt
+                ? `Dispatched ${formatOrderDateTime(shipment.dispatchedAt)}`
+                : "Awaiting dispatch from warehouse"}
+              {shipment.receivedByVendorAt
+                ? ` · Received ${formatOrderDateTime(shipment.receivedByVendorAt)}`
+                : ""}
+            </p>
+          </footer>
+        </article>
+      ))}
+    </div>
   )
 }
 

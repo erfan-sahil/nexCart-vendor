@@ -42,6 +42,7 @@ const STATUS_BADGE: Record<
   delivered: { icon: CheckCircle2, tone: "success" },
   delivery_failed: { icon: AlertTriangle, tone: "danger" },
   customer_rejected: { icon: AlertTriangle, tone: "danger" },
+  partially_rejected: { icon: AlertTriangle, tone: "warning" },
 }
 
 const FALLBACK_BADGE = {

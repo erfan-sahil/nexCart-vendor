@@ -32,14 +32,17 @@ import {
 } from "../lib/order-progress"
 import {
   canAcknowledgeRejectReturns,
+  canConfirmVendorReturnShipments,
   getStatusTransitions,
 } from "../lib/status-transitions"
 import type { VendorOrderDetail, VendorOrderItem } from "../types"
 
 import {
+  OrderCustomerAcceptanceSummary,
   OrderDeliveryReturnNotice,
   OrderInboundBatches,
   OrderRejectReturns,
+  OrderVendorReturnShipments,
 } from "./order-fulfillment-sections"
 import { OrderStatusBadge } from "./order-status-badge"
 
@@ -125,12 +128,20 @@ function OrderDetailsBody({
   order: VendorOrderDetail
   onClose: () => void
 }) {
-  const { updateStatus } = useVendorOrderActions()
+  const { updateStatus, confirmVendorReturn } = useVendorOrderActions()
   const [error, setError] = useState<string | null>(null)
-  const busy = updateStatus.isPending
+  const busy = updateStatus.isPending || confirmVendorReturn.isPending
   const progress = orderQtyProgress(order)
   const transitions = getStatusTransitions(order.status)
   const showAck = canAcknowledgeRejectReturns(order.rejectReturns)
+  const vendorReturnShipments = order.vendorReturnShipments ?? []
+  const rejectionSummary = order.rejectionSummary ?? []
+  const pendingVendorReturns = vendorReturnShipments.filter(
+    (shipment) => shipment.status === "in_transit_to_vendor"
+  )
+  const showVendorReturnAck = canConfirmVendorReturnShipments(
+    vendorReturnShipments
+  )
 
   const run = async (fn: () => Promise<unknown>) => {
     setError(null)
@@ -143,11 +154,30 @@ function OrderDetailsBody({
 
   const primaryActions: ReactNode[] = []
 
+  if (showVendorReturnAck) {
+    for (const shipment of pendingVendorReturns) {
+      primaryActions.push(
+        <Button
+          key={`vendor-return-${shipment.id}`}
+          type="button"
+          className="cursor-pointer"
+          disabled={busy}
+          onClick={() =>
+            run(() => confirmVendorReturn.mutateAsync(shipment.id))
+          }
+        >
+          Confirm returned products received
+        </Button>
+      )
+    }
+  }
+
   if (showAck) {
     primaryActions.push(
       <Button
         key="ack"
         type="button"
+        variant="outline"
         className="cursor-pointer"
         disabled={busy}
         onClick={() =>
@@ -159,7 +189,7 @@ function OrderDetailsBody({
           )
         }
       >
-        Confirm rejected products received
+        Confirm warehouse rejects received
       </Button>
     )
   }
@@ -250,6 +280,12 @@ function OrderDetailsBody({
             <ItemList items={order.items} />
           </Section>
 
+          {rejectionSummary.some((row) => row.rejectedQty > 0) ? (
+            <Section title="Customer acceptance">
+              <OrderCustomerAcceptanceSummary summary={rejectionSummary} />
+            </Section>
+          ) : null}
+
           <Section
             title="Inbound batches"
             meta={`${order.inboundBatches.length} shipment${
@@ -260,13 +296,20 @@ function OrderDetailsBody({
           </Section>
 
           {order.rejectReturns.length > 0 ? (
-            <Section title="Rejected returns">
+            <Section title="Warehouse reject returns">
               <OrderRejectReturns returns={order.rejectReturns} />
             </Section>
           ) : null}
 
+          {vendorReturnShipments.length > 0 ? (
+            <Section title="Returned products to you">
+              <OrderVendorReturnShipments shipments={vendorReturnShipments} />
+            </Section>
+          ) : null}
+
           {order.status === "delivery_failed" ||
-          order.status === "customer_rejected" ? (
+          order.status === "customer_rejected" ||
+          order.status === "partially_rejected" ? (
             <Section title="Delivery return">
               <OrderDeliveryReturnNotice status={order.status} />
             </Section>

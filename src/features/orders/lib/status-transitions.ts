@@ -96,3 +96,9 @@ export function canAcknowledgeRejectReturns(
 ) {
   return rejectReturns.some((row) => row.status === "in_transit_to_vendor")
 }
+
+export function canConfirmVendorReturnShipments(
+  shipments: { status: string }[]
+) {
+  return shipments.some((row) => row.status === "in_transit_to_vendor")
+}

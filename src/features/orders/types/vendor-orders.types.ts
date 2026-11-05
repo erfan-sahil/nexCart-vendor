@@ -17,6 +17,10 @@ export type VendorOrderStatus =
   | "delivered"
   | "delivery_failed"
   | "customer_rejected"
+  | "partially_rejected"
+
+export type VendorReturnShipmentStatus =
+  "pending_dispatch_to_vendor" | "in_transit_to_vendor" | "received_by_vendor"
 
 export type InboundBatchStatus =
   "dispatched" | "received" | "inspecting" | "inspected"
@@ -92,6 +96,43 @@ export type VendorRejectReturn = {
   receivedByVendorAt: string | null
 }
 
+export type VendorOrderRejectionLineSummary = {
+  variantId: string
+  productId: string
+  productName: string
+  sku: string
+  orderedQty: number
+  acceptedQty: number
+  rejectedQty: number
+  unitPrice: number
+  disposition: string | null
+}
+
+export type VendorReturnShipmentLine = {
+  variantId: string
+  productId: string
+  productName: string
+  sku: string
+  quantity: number
+}
+
+export type VendorReturnShipment = {
+  id: string
+  returnRequestId: string
+  vendorOrderId: string
+  parentOrderId: string
+  storeId: string
+  vendorUserId: string
+  status: VendorReturnShipmentStatus | string
+  lines: VendorReturnShipmentLine[]
+  carrier: string
+  trackingNumber: string
+  dispatchedAt: string | null
+  receivedByVendorAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
 export type VendorInboundFulfillment = {
   id: string
   orderId: string
@@ -114,6 +155,8 @@ export type VendorOrderDetail = VendorOrder & {
   inbound: VendorInboundFulfillment | null
   inboundBatches: VendorInboundBatch[]
   rejectReturns: VendorRejectReturn[]
+  vendorReturnShipments?: VendorReturnShipment[]
+  rejectionSummary?: VendorOrderRejectionLineSummary[]
 }
 
 export type VendorOrderSummary = {
@@ -131,6 +174,9 @@ export type VendorOrderSummary = {
   shipped: number
   outForDelivery: number
   delivered: number
+  partiallyRejected?: number
+  customerRejected?: number
+  deliveryFailed?: number
 }
 
 export type ListVendorOrdersParams = {
