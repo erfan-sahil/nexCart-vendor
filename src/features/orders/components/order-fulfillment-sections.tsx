@@ -100,6 +100,35 @@ export function OrderInboundBatches({
   )
 }
 
+export function OrderDeliveryReturnNotice({ status }: { status: string }) {
+  if (status !== "delivery_failed" && status !== "customer_rejected") {
+    return null
+  }
+
+  return (
+    <article className="overflow-hidden rounded-lg border border-border">
+      <header className="border-b border-border bg-muted/40 px-3 py-2">
+        <p className="text-sm font-medium">
+          {status === "delivery_failed"
+            ? "Delivery failed"
+            : "Customer rejected at delivery"}
+        </p>
+      </header>
+      <div className="space-y-2 px-3 py-3 text-sm text-muted-foreground">
+        <p>
+          This slice is returning to the NexCart warehouse. Earnings for
+          rejected items are reversed after warehouse acceptance. No vendor
+          action is required.
+        </p>
+        <p>
+          Refund and restock are handled by NexCart admin once the goods are
+          inspected.
+        </p>
+      </div>
+    </article>
+  )
+}
+
 export function OrderRejectReturns({
   returns,
 }: {
