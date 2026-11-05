@@ -1,3 +1,5 @@
 export { BrandLogo } from "./brand-logo"
+export { KpiCard, type PeriodMetric } from "./kpi-card"
 export { PagePlaceholder } from "./page-placeholder"
+export { RangeSelect } from "./range-select"
 export { StatusBadge, type StatusBadgeTone } from "./status-badge"

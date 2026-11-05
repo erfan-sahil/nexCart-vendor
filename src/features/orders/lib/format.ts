@@ -1,3 +1,10 @@
+export {
+  formatMoney,
+  formatCompactMoney,
+  formatPercent,
+  formatBucketLabel,
+} from "@/lib/format"
+
 const dateFormat = new Intl.DateTimeFormat("en", {
   month: "short",
   day: "numeric",
@@ -11,10 +18,6 @@ const dateTimeFormat = new Intl.DateTimeFormat("en", {
   hour: "numeric",
   minute: "2-digit",
 })
-
-export function formatMoney(amount: number, currency = "BDT") {
-  return `${currency} ${amount.toLocaleString()}`
-}
 
 export function formatOrderDate(value: string) {
   const date = new Date(value)
