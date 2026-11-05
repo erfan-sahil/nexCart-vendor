@@ -7,6 +7,7 @@ export type WalletBalances = {
   pendingSettlement: number
   availableBalance: number
   withdrawnBalance: number
+  totalBalance?: number
 }
 
 export type LedgerRow = {

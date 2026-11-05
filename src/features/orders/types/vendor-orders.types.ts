@@ -15,6 +15,8 @@ export type VendorOrderStatus =
   | "shipped"
   | "out_for_delivery"
   | "delivered"
+  | "delivery_failed"
+  | "customer_rejected"
 
 export type InboundBatchStatus =
   "dispatched" | "received" | "inspecting" | "inspected"

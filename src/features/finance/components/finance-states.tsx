@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ApiError } from "@/lib/api/errors"
 
-import { formatTransactionRange } from "../lib/format"
+import { formatListRange, formatTransactionRange } from "../lib/format"
 
 export function FinanceSummarySkeleton() {
   return (
@@ -98,6 +98,7 @@ export function FinancePagination({
   limit,
   onPageChange,
   disabled,
+  itemNoun = "transactions",
 }: {
   page: number
   totalPages: number
@@ -105,20 +106,20 @@ export function FinancePagination({
   limit: number
   onPageChange: (page: number) => void
   disabled?: boolean
+  itemNoun?: string
 }) {
+  const rangeLabel =
+    itemNoun === "transactions"
+      ? formatTransactionRange(page, limit, total)
+      : formatListRange(page, limit, total, itemNoun)
+
   if (totalPages <= 1) {
-    return (
-      <p className="text-xs text-muted-foreground">
-        {formatTransactionRange(page, limit, total)}
-      </p>
-    )
+    return <p className="text-xs text-muted-foreground">{rangeLabel}</p>
   }
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
-      <p className="text-xs text-muted-foreground">
-        {formatTransactionRange(page, limit, total)}
-      </p>
+      <p className="text-xs text-muted-foreground">{rangeLabel}</p>
       <div className="flex items-center gap-2">
         <Button
           type="button"

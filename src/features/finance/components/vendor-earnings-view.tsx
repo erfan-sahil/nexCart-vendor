@@ -75,8 +75,8 @@ export function VendorEarningsView() {
               </li>
               <li>
                 <span className="font-medium text-foreground">Withdrawn</span> (
-                {formatBdt(balances.withdrawnBalance)}) — total sent to your
-                payout method after withdrawal requests are processed.
+                {formatBdt(balances.withdrawnBalance)}) — approved by admin and
+                moving through payout (includes completed transfers).
               </li>
             </ul>
           </section>

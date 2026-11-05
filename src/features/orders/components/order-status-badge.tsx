@@ -40,6 +40,8 @@ const STATUS_BADGE: Record<
   shipped: { icon: Truck, tone: "brand" },
   out_for_delivery: { icon: Truck, tone: "brand" },
   delivered: { icon: CheckCircle2, tone: "success" },
+  delivery_failed: { icon: AlertTriangle, tone: "danger" },
+  customer_rejected: { icon: AlertTriangle, tone: "danger" },
 }
 
 const FALLBACK_BADGE = {

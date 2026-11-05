@@ -44,18 +44,35 @@ export function formatFinanceDateTime(value: string) {
   return dateTimeFormat.format(date)
 }
 
+export function formatListRange(
+  page: number,
+  limit: number,
+  total: number,
+  itemNoun: string
+) {
+  if (total === 0) {
+    return `No ${itemNoun}`
+  }
+
+  const start = (page - 1) * limit + 1
+  const end = Math.min(page * limit, total)
+  return `${start}–${end} of ${total} ${itemNoun}`
+}
+
 export function formatTransactionRange(
   page: number,
   limit: number,
   total: number
 ) {
-  if (total === 0) {
-    return "No transactions"
-  }
+  return formatListRange(page, limit, total, "transactions")
+}
 
-  const start = (page - 1) * limit + 1
-  const end = Math.min(page * limit, total)
-  return `${start}–${end} of ${total} transactions`
+export function formatWithdrawalRange(
+  page: number,
+  limit: number,
+  total: number
+) {
+  return formatListRange(page, limit, total, "withdrawals")
 }
 
 export function shortenId(id: string, visible = 8) {

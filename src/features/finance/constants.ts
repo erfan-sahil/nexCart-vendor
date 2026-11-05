@@ -53,6 +53,29 @@ export function ledgerAccountLabel(account: string) {
   return LEDGER_ACCOUNT_LABEL[account] ?? account
 }
 
+export const WITHDRAWAL_STATUS_LABEL: Record<string, string> = {
+  pending: "Pending review",
+  approved: "Approved",
+  processing: "Processing",
+  paid: "Paid",
+  rejected: "Rejected",
+  cancelled: "Cancelled",
+}
+
+export const WITHDRAWAL_METHOD_LABEL: Record<string, string> = {
+  bank: "Bank transfer",
+  bkash: "bKash",
+  nagad: "Nagad",
+}
+
+export function withdrawalStatusLabel(status: string) {
+  return WITHDRAWAL_STATUS_LABEL[status] ?? status.replace(/_/g, " ")
+}
+
+export function withdrawalMethodLabel(method: string) {
+  return WITHDRAWAL_METHOD_LABEL[method] ?? method
+}
+
 export function ledgerTypeDescription(type: string, account: string) {
   switch (type) {
     case "sale_credit":

@@ -37,6 +37,7 @@ import {
 import type { VendorOrderDetail, VendorOrderItem } from "../types"
 
 import {
+  OrderDeliveryReturnNotice,
   OrderInboundBatches,
   OrderRejectReturns,
 } from "./order-fulfillment-sections"
@@ -261,6 +262,13 @@ function OrderDetailsBody({
           {order.rejectReturns.length > 0 ? (
             <Section title="Rejected returns">
               <OrderRejectReturns returns={order.rejectReturns} />
+            </Section>
+          ) : null}
+
+          {order.status === "delivery_failed" ||
+          order.status === "customer_rejected" ? (
+            <Section title="Delivery return">
+              <OrderDeliveryReturnNotice status={order.status} />
             </Section>
           ) : null}
 

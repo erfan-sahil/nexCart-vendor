@@ -1,47 +1,53 @@
 "use client"
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Loader2 } from "lucide-react"
 import { useState } from "react"
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 import { ApiError } from "@/lib/api/errors"
 
+import {
+  FinanceEmptyState,
+  FinanceErrorState,
+  FinancePagination,
+  FinanceTableSkeleton,
+} from "./finance-states"
+import { WithdrawalCancelDialog } from "./withdrawal-cancel-dialog"
+import { WithdrawalRequestCard } from "./withdrawal-request-card"
+import { WithdrawalTable } from "./withdrawal-table"
 import {
   cancelWithdrawal,
   createWithdrawal,
   getWalletBalances,
   listWithdrawals,
 } from "../services/vendor-finance.api"
+import type { WithdrawalRow } from "../services/vendor-finance.api"
+
+const PAGE_SIZE = 20
 
 export function VendorWithdrawalsView() {
   const queryClient = useQueryClient()
+  const [page, setPage] = useState(1)
+  const [amount, setAmount] = useState("")
+  const [formError, setFormError] = useState<string | null>(null)
+  const [cancelTarget, setCancelTarget] = useState<WithdrawalRow | null>(null)
+
   const balances = useQuery({
     queryKey: ["vendor", "wallet", "balances"],
     queryFn: getWalletBalances,
   })
+
   const list = useQuery({
-    queryKey: ["vendor", "withdrawals"],
-    queryFn: () => listWithdrawals(1, 50),
+    queryKey: ["vendor", "withdrawals", page],
+    queryFn: () => listWithdrawals(page, PAGE_SIZE),
   })
-  const [amount, setAmount] = useState("")
-  const [error, setError] = useState<string | null>(null)
 
   const create = useMutation({
     mutationFn: createWithdrawal,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["vendor"] })
       setAmount("")
+      setFormError(null)
+      setPage(1)
     },
   })
 
@@ -49,82 +55,153 @@ export function VendorWithdrawalsView() {
     mutationFn: cancelWithdrawal,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["vendor"] })
+      setCancelTarget(null)
     },
   })
 
-  return (
-    <div className="space-y-6 p-6">
-      <h1 className="text-2xl font-semibold">Withdrawals</h1>
-      <p className="text-sm text-muted-foreground">
-        Available: ৳{balances.data?.availableBalance.toFixed(2) ?? "0.00"}
-      </p>
+  const items = list.data?.items ?? []
+  const pagination = list.data?.pagination
+  const total = pagination?.total ?? items.length
+  const totalPages = pagination?.totalPages ?? 1
+  const available = balances.data?.availableBalance ?? 0
 
-      <form
-        className="flex max-w-sm flex-col gap-3"
-        onSubmit={async (event) => {
-          event.preventDefault()
-          setError(null)
-          try {
-            await create.mutateAsync(Number(amount))
-          } catch (err) {
-            setError(err instanceof ApiError ? err.message : "Request failed.")
+  const submitWithdrawal = async () => {
+    setFormError(null)
+    const parsed = Number(amount)
+
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      setFormError("Enter a valid amount greater than zero.")
+      return
+    }
+
+    if (parsed > available) {
+      setFormError("Amount exceeds your available balance.")
+      return
+    }
+
+    try {
+      await create.mutateAsync(parsed)
+    } catch (err) {
+      setFormError(err instanceof ApiError ? err.message : "Request failed.")
+    }
+  }
+
+  return (
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-6">
+      <header>
+        <h1 className="text-2xl font-semibold tracking-tight">Withdrawals</h1>
+        <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+          Request payouts from your available balance. Pending requests can be
+          cancelled until admin review begins.
+        </p>
+      </header>
+
+      {balances.isError ? (
+        <FinanceErrorState
+          title="Could not load balance"
+          error={balances.error}
+          onRetry={() => void balances.refetch()}
+        />
+      ) : balances.isPending && !balances.data ? (
+        <div
+          className="h-52 animate-pulse rounded-xl border border-border bg-muted/40"
+          aria-hidden="true"
+        />
+      ) : (
+        <WithdrawalRequestCard
+          available={available}
+          amount={amount}
+          formError={formError}
+          isBalanceLoading={balances.isLoading}
+          isSubmitting={create.isPending}
+          onAmountChange={setAmount}
+          onSubmit={() => void submitWithdrawal()}
+        />
+      )}
+
+      <div className="overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-sm">
+        <div className="border-b border-border px-4 py-3 sm:px-5">
+          <h2 className="text-sm font-semibold">Withdrawal history</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Recent payout requests and their status.
+          </p>
+        </div>
+
+        {list.isPending && !list.data ? (
+          <FinanceTableSkeleton />
+        ) : list.isError ? (
+          <FinanceErrorState
+            title="Could not load withdrawals"
+            error={list.error}
+            onRetry={() => void list.refetch()}
+          />
+        ) : items.length === 0 ? (
+          <FinanceEmptyState
+            title="No withdrawals yet"
+            description="When you request a payout from your available balance, it will appear here."
+          />
+        ) : (
+          <>
+            <WithdrawalTable
+              rows={items}
+              isRefreshing={list.isFetching && !list.isPending}
+              cancelPendingId={
+                cancel.isPending ? (cancelTarget?.id ?? null) : null
+              }
+              onCancel={setCancelTarget}
+            />
+
+            <div className="border-t border-border px-4 py-3 sm:px-5">
+              <FinancePagination
+                page={page}
+                totalPages={totalPages}
+                total={total}
+                limit={PAGE_SIZE}
+                itemNoun="withdrawals"
+                disabled={list.isFetching}
+                onPageChange={setPage}
+              />
+            </div>
+          </>
+        )}
+      </div>
+
+      <section className="rounded-xl border border-border bg-card p-4 text-card-foreground shadow-sm sm:p-5">
+        <h2 className="text-sm font-semibold">Payout timeline</h2>
+        <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+          <li>
+            <span className="font-medium text-foreground">Pending review</span>{" "}
+            — your request is queued; you can cancel it from the history table.
+          </li>
+          <li>
+            <span className="font-medium text-foreground">
+              Approved & processing
+            </span>{" "}
+            — admin confirmed the payout; funds are reserved while transfer
+            completes.
+          </li>
+          <li>
+            <span className="font-medium text-foreground">Paid</span> — money
+            sent to your saved payout account.
+          </li>
+          <li>
+            Rejected or cancelled requests release reserved funds back to your
+            available balance automatically.
+          </li>
+        </ul>
+      </section>
+
+      <WithdrawalCancelDialog
+        withdrawal={cancelTarget}
+        open={Boolean(cancelTarget)}
+        isPending={cancel.isPending}
+        onClose={() => {
+          if (!cancel.isPending) {
+            setCancelTarget(null)
           }
         }}
-      >
-        <div className="space-y-2">
-          <Label htmlFor="amount">Amount (BDT)</Label>
-          <Input
-            id="amount"
-            type="number"
-            min={0}
-            step="0.01"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-          />
-        </div>
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
-        <Button type="submit" disabled={create.isPending}>
-          Request withdrawal
-        </Button>
-      </form>
-
-      {list.isLoading ? (
-        <Loader2 className="size-5 animate-spin text-muted-foreground" />
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Amount</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {(list.data?.items ?? []).map((row) => (
-              <TableRow key={row.id}>
-                <TableCell>৳{row.amount.toFixed(2)}</TableCell>
-                <TableCell>{row.status}</TableCell>
-                <TableCell>
-                  {new Date(row.createdAt).toLocaleString()}
-                </TableCell>
-                <TableCell>
-                  {row.status === "pending" ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={cancel.isPending}
-                      onClick={() => cancel.mutate(row.id)}
-                    >
-                      Cancel
-                    </Button>
-                  ) : null}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+        onConfirm={(id) => cancel.mutate(id)}
+      />
     </div>
   )
 }
