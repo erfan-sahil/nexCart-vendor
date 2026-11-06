@@ -22,6 +22,10 @@ export const DEFAULT_PRODUCT_PAGE_SIZE = 20
 
 export const MAX_PRODUCT_IMAGES = 8
 
+export const MAX_PRODUCT_FEATURES = 30
+
+export const MAX_PRODUCT_FEATURE_LENGTH = 160
+
 export const MAX_PRODUCT_IMAGE_BYTES = 5 * 1024 * 1024
 
 export const PRODUCT_IMAGE_TYPES = [

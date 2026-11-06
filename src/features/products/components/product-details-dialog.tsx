@@ -129,27 +129,30 @@ function ProductDetails({
 
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
               <ProductGallery images={images} name={product.name} />
-              <Section title="Description" className="min-w-0 flex-1">
+              <Section title="Summary" className="min-w-0 flex-1">
                 <div className="rounded-lg border border-border px-3 py-3">
-                  {product.shortDescription ? (
-                    <p className="text-sm font-medium">
-                      {product.shortDescription}
-                    </p>
-                  ) : null}
-                  <p
-                    className={cn(
-                      "text-sm leading-relaxed whitespace-pre-line text-foreground",
-                      product.shortDescription && "mt-2 text-muted-foreground"
-                    )}
-                  >
-                    {product.description || "No description yet."}
+                  <p className="text-sm leading-relaxed whitespace-pre-line text-foreground">
+                    {product.shortDescription || "No summary yet."}
                   </p>
                 </div>
               </Section>
             </div>
 
+            <Section title="Specifications">
+              <FeatureList
+                features={
+                  (product.features ?? []).length > 0
+                    ? product.features
+                    : product.description
+                        .split("\n")
+                        .map((line) => line.trim())
+                        .filter(Boolean)
+                }
+              />
+            </Section>
+
             {specs.length > 0 ? (
-              <Section title="Specifications">
+              <Section title="Category details">
                 <FactList
                   items={specs.map((attribute) => ({
                     label: attributeLabel(attribute),
@@ -427,6 +430,29 @@ function ProductGallery({
         </div>
       ) : null}
     </div>
+  )
+}
+
+function FeatureList({ features }: { features: string[] }) {
+  if (features.length === 0) {
+    return (
+      <p className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
+        No specifications yet.
+      </p>
+    )
+  }
+
+  return (
+    <ul className="overflow-hidden rounded-lg border border-border">
+      {features.map((feature, index) => (
+        <li
+          key={`${index}-${feature}`}
+          className="border-b border-border px-3 py-2.5 text-sm last:border-b-0"
+        >
+          {feature}
+        </li>
+      ))}
+    </ul>
   )
 }
 
