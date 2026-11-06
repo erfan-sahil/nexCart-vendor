@@ -64,6 +64,7 @@ import {
 } from "../services"
 
 import { ProductAttributeFields } from "./product-attribute-fields"
+import { ProductFeatureFields } from "./product-feature-fields"
 import { ProductImageField } from "./product-image-field"
 import { ProductOfferFields } from "./product-offer-fields"
 
@@ -74,7 +75,7 @@ type ProductField =
   | "name"
   | "slug"
   | "shortDescription"
-  | "description"
+  | "features"
   | "categoryId"
   | "tags"
   | "status"
@@ -84,7 +85,7 @@ const PRODUCT_FIELDS = new Set<ProductField>([
   "name",
   "slug",
   "shortDescription",
-  "description",
+  "features",
   "categoryId",
   "tags",
   "status",
@@ -97,11 +98,23 @@ function isProductField(value: string): value is ProductField {
 
 function errorsFromApi(error: ApiError, attributes: ProductAttributeInput[]) {
   const fields: Partial<Record<ProductField, string>> = {}
+  const featureErrors: Record<number, string> = {}
   const attributeErrors: Record<string, string> = {}
   let hasUnmapped = false
 
   for (const field of error.fields ?? []) {
     const [root, index] = field.path.split(".")
+
+    if (root === "features") {
+      const featureIndex = Number(index)
+
+      if (Number.isInteger(featureIndex) && !featureErrors[featureIndex]) {
+        featureErrors[featureIndex] = field.message
+      } else if (!fields.features) {
+        fields.features = field.message
+      }
+      continue
+    }
 
     if (root === "attributes") {
       const attribute = attributes[Number(index)]
@@ -122,13 +135,16 @@ function errorsFromApi(error: ApiError, attributes: ProductAttributeInput[]) {
   }
 
   const message =
-    Object.keys(fields).length + Object.keys(attributeErrors).length > 0 &&
+    Object.keys(fields).length +
+      Object.keys(featureErrors).length +
+      Object.keys(attributeErrors).length >
+      0 &&
     !hasUnmapped &&
     error.message === "Validation failed"
       ? null
       : error.message
 
-  return { fields, attributeErrors, message }
+  return { fields, featureErrors, attributeErrors, message }
 }
 
 function defaultValues(
@@ -380,6 +396,10 @@ export function ProductForm({
           if (message && isProductField(field)) {
             form.setError(field, { message })
           }
+        }
+
+        for (const [index, message] of Object.entries(next.featureErrors)) {
+          form.setError(`features.${Number(index)}`, { message })
         }
 
         setAttributeErrors(next.attributeErrors)
@@ -707,9 +727,15 @@ export function ProductForm({
                 <Textarea
                   {...field}
                   id="product-short-description"
+                  rows={2}
+                  placeholder="A short summary shoppers see under the product name."
                   aria-invalid={fieldState.invalid}
                   disabled={busy}
                 />
+                <FieldDescription>
+                  Keep this to one or two sentences. Put product features in the
+                  list below.
+                </FieldDescription>
                 {fieldState.invalid ? (
                   <FieldError errors={[fieldState.error]} />
                 ) : null}
@@ -717,28 +743,15 @@ export function ProductForm({
             )}
           />
 
-          <Controller
-            name="description"
+          <ProductFeatureFields
             control={form.control}
-            render={({ field, fieldState }) => (
-              <Field
-                className="sm:col-span-2"
-                data-invalid={fieldState.invalid}
-              >
-                <FieldLabel htmlFor="product-description">
-                  Description
-                </FieldLabel>
-                <Textarea
-                  {...field}
-                  id="product-description"
-                  aria-invalid={fieldState.invalid}
-                  disabled={busy}
-                />
-                {fieldState.invalid ? (
-                  <FieldError errors={[fieldState.error]} />
-                ) : null}
-              </Field>
-            )}
+            disabled={busy}
+            onChange={(features) => {
+              form.setValue("features", features, {
+                shouldDirty: true,
+                shouldValidate: form.formState.isSubmitted,
+              })
+            }}
           />
 
           {!canSell ? null : (

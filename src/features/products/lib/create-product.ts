@@ -1,6 +1,10 @@
 import { z } from "zod"
 
-import { PRODUCT_STATUSES } from "../constants"
+import {
+  MAX_PRODUCT_FEATURE_LENGTH,
+  MAX_PRODUCT_FEATURES,
+  PRODUCT_STATUSES,
+} from "../constants"
 import type { CategoryAttribute, Product, ProductAttribute } from "../types"
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
@@ -42,7 +46,20 @@ export const createProductFormSchema = z.object({
       "Slug must be lowercase and URL-friendly."
     ),
   shortDescription: z.string().trim().max(300, "Use 300 characters or fewer."),
-  description: z.string().trim().max(10_000, "Use 10000 characters or fewer."),
+  features: z
+    .array(z.string())
+    .max(MAX_PRODUCT_FEATURES, `Add ${MAX_PRODUCT_FEATURES} features or fewer.`)
+    .superRefine((features, ctx) => {
+      features.forEach((feature, index) => {
+        if (feature.trim().length > MAX_PRODUCT_FEATURE_LENGTH) {
+          ctx.addIssue({
+            code: "custom",
+            path: [index],
+            message: `Use ${MAX_PRODUCT_FEATURE_LENGTH} characters or fewer.`,
+          })
+        }
+      })
+    }),
   categoryId: z
     .string()
     .trim()
@@ -92,7 +109,7 @@ export const EMPTY_PRODUCT_FORM: CreateProductFormValues = {
   name: "",
   slug: "",
   shortDescription: "",
-  description: "",
+  features: [""],
   categoryId: "",
   tags: "",
   status: "active",
@@ -249,10 +266,27 @@ export type CreateProductPayload = {
   status: CreateProductFormValues["status"]
   slug?: string
   shortDescription?: string
-  description?: string
+  features?: string[]
   tags?: string[]
   attributes?: ProductAttributeInput[]
   images: string[]
+}
+
+export function cleanFeatures(features: string[]) {
+  return features.map((feature) => feature.trim()).filter(Boolean)
+}
+
+export function featureDrafts(product: Product) {
+  if (product.features.length > 0) {
+    return product.features
+  }
+
+  const lines = product.description
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+
+  return lines.length > 0 ? lines : [""]
 }
 
 export function toCreatePayload(
@@ -273,8 +307,8 @@ export function toCreatePayload(
     ...(form.shortDescription.trim()
       ? { shortDescription: form.shortDescription.trim() }
       : {}),
-    ...(form.description.trim()
-      ? { description: form.description.trim() }
+    ...(cleanFeatures(form.features).length > 0
+      ? { features: cleanFeatures(form.features) }
       : {}),
     ...(tags.length > 0 ? { tags } : {}),
     ...(attributes.length > 0 ? { attributes } : {}),
@@ -288,7 +322,7 @@ export type UpdateProductPayload = {
   status: CreateProductFormValues["status"]
   slug?: string
   shortDescription: string
-  description: string
+  features: string[]
   tags: string[]
   attributes: ProductAttributeInput[]
 }
@@ -298,7 +332,7 @@ export function formFromProduct(product: Product): CreateProductFormValues {
     name: product.name,
     slug: product.slug,
     shortDescription: product.shortDescription,
-    description: product.description,
+    features: featureDrafts(product),
     categoryId: product.categoryId,
     tags: product.tags.join(", "),
     status: product.status,
@@ -341,7 +375,7 @@ export function toUpdatePayload(
     categoryId: form.categoryId,
     status: form.status,
     shortDescription: form.shortDescription.trim(),
-    description: form.description.trim(),
+    features: cleanFeatures(form.features),
     tags,
     attributes,
     ...(form.slug.trim() ? { slug: form.slug.trim() } : {}),
