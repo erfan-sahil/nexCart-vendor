@@ -67,8 +67,8 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-card p-4 text-sm text-card-foreground shadow-lg ring-1 ring-border duration-200 outline-none sm:max-w-lg data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
-          shell && dialogShellClassName,
+          "fixed top-1/2 left-1/2 z-50 w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-card text-sm text-card-foreground shadow-lg ring-1 ring-border duration-200 outline-none sm:max-w-lg data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          shell ? dialogShellClassName : "grid gap-4 p-4",
           className
         )}
         {...props}
@@ -193,8 +193,8 @@ function DialogBody({
   }
 
   return (
-    <ScrollArea type="auto" className="min-h-0 flex-1">
-      <div className={cn("px-5 py-5", className)} {...props}>
+    <ScrollArea type="auto" className="min-h-0 flex-1 overflow-hidden">
+      <div className={cn("min-w-0 px-5 py-5", className)} {...props}>
         {children}
       </div>
     </ScrollArea>

@@ -49,12 +49,17 @@ export function TransactionDetailsDialog({
 
   return (
     <Dialog open onOpenChange={(next) => !next && onClose()}>
-      <DialogContent shell className="sm:max-w-lg">
+      <DialogContent
+        shell
+        className="h-[min(40rem,calc(100dvh-2rem))] min-w-0 sm:max-w-lg"
+      >
         <DialogHeader>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 space-y-2">
-              <DialogTitle>{ledgerTypeLabel(transaction.type)}</DialogTitle>
-              <DialogDescription className="text-pretty">
+              <DialogTitle className="wrap-break-word">
+                {ledgerTypeLabel(transaction.type)}
+              </DialogTitle>
+              <DialogDescription className="text-pretty wrap-break-word">
                 {ledgerTypeDescription(transaction.type, transaction.account)}
               </DialogDescription>
             </div>
@@ -80,7 +85,7 @@ export function TransactionDetailsDialog({
         </DialogHeader>
 
         <DialogBody className="flex flex-col gap-5">
-          <dl className="overflow-hidden rounded-xl border border-border">
+          <dl className="min-w-0 rounded-xl border border-border">
             <SummaryRow
               icon={Wallet}
               label="Account"
@@ -106,7 +111,7 @@ export function TransactionDetailsDialog({
             <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
               Record
             </h3>
-            <dl className="overflow-hidden rounded-xl border border-border">
+            <dl className="min-w-0 rounded-xl border border-border">
               <Record
                 label="Entry type"
                 value={ledgerTypeLabel(transaction.type)}
@@ -219,20 +224,20 @@ function Record({
   muted?: boolean
 }) {
   return (
-    <div className="grid gap-1 border-b border-border px-3.5 py-3 last:border-b-0 sm:grid-cols-[7.5rem_minmax(0,1fr)] sm:items-baseline sm:gap-4">
+    <div className="space-y-1 border-b border-border px-3.5 py-3 last:border-b-0">
       <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="min-w-0 sm:text-right">
+      <dd className="min-w-0">
         <p
           className={cn(
             "text-sm font-medium wrap-break-word",
-            mono && "font-mono text-xs leading-relaxed font-normal",
+            mono && "font-mono text-xs leading-relaxed font-normal break-all",
             muted && "font-sans text-sm font-normal text-muted-foreground"
           )}
         >
           {value}
         </p>
         {detail ? (
-          <p className="mt-0.5 font-mono text-[0.7rem] text-muted-foreground sm:text-right">
+          <p className="mt-0.5 font-mono text-[0.7rem] break-all text-muted-foreground">
             {detail}
           </p>
         ) : null}
