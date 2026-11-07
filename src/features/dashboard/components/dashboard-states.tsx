@@ -1,25 +1,33 @@
 import { Button } from "@/components/ui/button"
 import { ApiError } from "@/lib/api/errors"
 
+import { dashboardPanelClass } from "../lib/dashboard-surface"
+
 export function DashboardSkeleton() {
   return (
     <div
-      className="mx-auto flex w-full max-w-6xl flex-col gap-6"
+      className="mx-auto flex w-full max-w-6xl flex-col gap-8"
       aria-hidden="true"
     >
+      <div className={`h-36 animate-pulse ${dashboardPanelClass}`} />
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }, (_, index) => (
           <div
             key={index}
-            className="h-28 animate-pulse rounded-xl border border-border bg-muted/40"
+            className={`h-36 animate-pulse ${dashboardPanelClass}`}
           />
         ))}
       </div>
+      <div className={`h-40 animate-pulse ${dashboardPanelClass}`} />
       <div className="grid gap-4 xl:grid-cols-5">
-        <div className="h-64 animate-pulse rounded-xl border border-border bg-muted/40 xl:col-span-3" />
-        <div className="h-64 animate-pulse rounded-xl border border-border bg-muted/40 xl:col-span-2" />
+        <div
+          className={`h-72 animate-pulse xl:col-span-3 ${dashboardPanelClass}`}
+        />
+        <div
+          className={`h-72 animate-pulse xl:col-span-2 ${dashboardPanelClass}`}
+        />
       </div>
-      <div className="h-72 animate-pulse rounded-xl border border-border bg-muted/40" />
+      <div className={`h-72 animate-pulse ${dashboardPanelClass}`} />
     </div>
   )
 }
@@ -38,7 +46,7 @@ export function DashboardErrorState({
 
   return (
     <div
-      className="mx-auto flex w-full max-w-6xl flex-col items-center rounded-xl border border-border bg-card px-6 py-16 text-center shadow-sm"
+      className={`mx-auto flex w-full max-w-6xl flex-col items-center px-6 py-16 text-center ${dashboardPanelClass}`}
       role="alert"
     >
       <p className="text-sm font-medium">Could not load dashboard</p>

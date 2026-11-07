@@ -12,6 +12,7 @@ import { RecentOrdersCard } from "./recent-orders-card"
 import { SalesOverviewCard } from "./sales-overview-card"
 import { StoreRatingCard } from "./store-rating-card"
 import { WalletCard } from "./wallet-card"
+import { dashboardPanelClass } from "../lib/dashboard-surface"
 import { useVendorDashboard } from "../hooks"
 import { type VendorDashboardRange } from "../types"
 
@@ -49,20 +50,32 @@ export function DashboardHome() {
   const label = rangeLabel(range)
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-muted-foreground">
-          Snapshot for the last {label}. Compares to the prior {label}.
-        </p>
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
+      <header
+        className={`flex flex-col gap-4 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6 ${dashboardPanelClass}`}
+      >
+        <div>
+          <p className="text-xs font-medium tracking-wider text-brand-text uppercase">
+            Overview
+          </p>
+          <h1 className="mt-1 font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
+            Dashboard
+          </h1>
+          <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+            Performance snapshot for the last {label}, compared to the prior{" "}
+            {label}.
+          </p>
+        </div>
         <RangeSelect
           value={range}
           onValueChange={setRange}
           options={RANGE_OPTIONS}
           ariaLabel="Dashboard date range"
         />
-      </div>
+      </header>
 
       <DashboardKpis kpis={overview.kpis} rangeLabel={label} />
+
       <DashboardOrderQueues orderQueues={overview.orderQueues} />
 
       <section className="grid gap-4 xl:grid-cols-5">
