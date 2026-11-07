@@ -61,6 +61,7 @@ import {
   productKeys,
   updateVariant,
   type CreateVariantPayload,
+  type UpdateVariantPayload,
 } from "../services"
 
 import { ProductAttributeFields } from "./product-attribute-fields"
@@ -167,11 +168,11 @@ function toVariantUpdate({
   isDefault,
   attributes,
   ...rest
-}: CreateVariantPayload) {
+}: CreateVariantPayload): UpdateVariantPayload {
   return {
     ...rest,
+    isDefault,
     ...(simple ? {} : { attributes }),
-    ...(isDefault ? { isDefault: true } : {}),
   }
 }
 

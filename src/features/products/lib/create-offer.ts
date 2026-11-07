@@ -50,7 +50,10 @@ export function isStoredVariantId(value: string) {
   return storedVariantIdPattern.test(value)
 }
 
-export function offersFromVariants(variants: ProductVariant[]) {
+export function offersFromVariants(variants: ProductVariant[]): {
+  offerMode: OfferMode
+  offers: OfferDraft[]
+} {
   if (variants.length === 0) {
     return {
       offerMode: "single" as const,
@@ -72,7 +75,7 @@ export function offersFromVariants(variants: ProductVariant[]) {
       hasOptions || ordered.length > 1
         ? ("variants" as const)
         : ("single" as const),
-    offers: ordered.map((variant) => ({
+    offers: ordered.map((variant): OfferDraft => ({
       key: variant.id,
       sku: variant.sku,
       price: String(variant.price),
