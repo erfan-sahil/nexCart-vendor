@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Loader2 } from "lucide-react"
+import { Loader2, MessageSquareReply } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -11,49 +11,54 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Field, FieldLabel } from "@/components/ui/field"
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { Textarea } from "@/components/ui/textarea"
 import { ApiError } from "@/lib/api/errors"
 import { notifyError, notifySuccess } from "@/lib/notify"
 
 import { useCreateStoreReviewReplyMutation } from "../hooks"
-import { formatReviewDateTime } from "../lib/format"
 import { REVIEW_BODY_MAX, REVIEW_BODY_MIN } from "../labels"
 import type { StoreReview } from "../types"
-import { ReviewStars } from "./review-stars"
+import { ReviewContextCard } from "./review-dialog-shared"
 
 type ReviewReplyDialogProps = {
   review: StoreReview | null
-  open: boolean
   onClose: () => void
 }
 
-export function ReviewReplyDialog({
+export function ReviewReplyDialog({ review, onClose }: ReviewReplyDialogProps) {
+  if (!review) {
+    return null
+  }
+
+  return <ReviewReplyForm key={review.id} review={review} onClose={onClose} />
+}
+
+function ReviewReplyForm({
   review,
-  open,
   onClose,
-}: ReviewReplyDialogProps) {
+}: {
+  review: StoreReview
+  onClose: () => void
+}) {
   const [body, setBody] = useState("")
   const [error, setError] = useState<string | null>(null)
   const reply = useCreateStoreReviewReplyMutation()
-  const alreadyReplied = Boolean(review?.hasVendorReply)
   const trimmed = body.trim()
   const tooShort = trimmed.length > 0 && trimmed.length < REVIEW_BODY_MIN
+  const blocked = review.hasVendorReply
   const canSubmit =
-    Boolean(review) &&
-    !alreadyReplied &&
+    !blocked &&
     trimmed.length >= REVIEW_BODY_MIN &&
     trimmed.length <= REVIEW_BODY_MAX &&
     !reply.isPending
 
   const resetAndClose = () => {
-    setBody("")
-    setError(null)
     onClose()
   }
 
   const onSubmit = async () => {
-    if (!review || !canSubmit) {
+    if (!canSubmit) {
       return
     }
 
@@ -79,99 +84,69 @@ export function ReviewReplyDialog({
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        if (!next) {
-          resetAndClose()
-        }
-      }}
-    >
+    <Dialog open onOpenChange={(next) => !next && resetAndClose()}>
       <DialogContent shell className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>
-            {alreadyReplied ? "Review thread" : "Reply to review"}
-          </DialogTitle>
+          <p className="text-xs font-medium text-brand-text">
+            {review.product.name}
+          </p>
+          <DialogTitle className="mt-1">Reply to review</DialogTitle>
           <DialogDescription>
-            {alreadyReplied
-              ? "You already replied to this buyer review."
-              : `Respond publicly to feedback on ${review?.product.name ?? "this product"}.`}
+            Your response is public and appears under this buyer&apos;s review.
           </DialogDescription>
         </DialogHeader>
 
-        {review ? (
-          <DialogBody className="space-y-4">
-            <div className="rounded-lg border border-border bg-muted/30 p-3">
-              <div className="flex items-center gap-2">
-                <ReviewStars rating={review.rating} />
-                <span className="text-xs text-muted-foreground">
-                  {review.author.displayName}
+        <DialogBody className="flex flex-col gap-4">
+          <ReviewContextCard review={review} compact />
+
+          {blocked ? (
+            <p className="rounded-xl border border-border bg-muted/30 px-3 py-2.5 text-sm text-muted-foreground">
+              You already posted a store reply. Open review details to read the
+              full thread.
+            </p>
+          ) : (
+            <Field>
+              <FieldLabel htmlFor="vendor-review-reply">Your reply</FieldLabel>
+              <Textarea
+                id="vendor-review-reply"
+                value={body}
+                onChange={(event) => setBody(event.target.value)}
+                placeholder="Thank the buyer and address their feedback…"
+                rows={5}
+                maxLength={REVIEW_BODY_MAX}
+                className="min-h-[7.5rem] resize-y"
+              />
+              <FieldDescription className="flex flex-wrap gap-x-2">
+                <span>
+                  {trimmed.length}/{REVIEW_BODY_MAX} characters
                 </span>
-              </div>
-              <p className="mt-2 text-sm whitespace-pre-wrap">{review.body}</p>
-              <p className="mt-2 text-xs text-muted-foreground">
-                {formatReviewDateTime(review.createdAt)} · {review.product.name}
-              </p>
-            </div>
+                {tooShort ? (
+                  <span className="text-destructive">
+                    At least {REVIEW_BODY_MIN} characters required
+                  </span>
+                ) : (
+                  <span>Minimum {REVIEW_BODY_MIN} characters</span>
+                )}
+              </FieldDescription>
+            </Field>
+          )}
 
-            {review.replies.length > 0 ? (
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Replies</p>
-                <ul className="space-y-2">
-                  {review.replies.map((item) => (
-                    <li
-                      key={item.id}
-                      className="rounded-lg border border-border px-3 py-2"
-                    >
-                      <p className="text-xs font-medium">
-                        {item.author.displayName}
-                        {item.isMine ? " (you)" : ""}
-                      </p>
-                      <p className="mt-1 text-sm whitespace-pre-wrap">
-                        {item.body}
-                      </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {formatReviewDateTime(item.createdAt)}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        </DialogBody>
 
-            {!alreadyReplied ? (
-              <Field>
-                <FieldLabel htmlFor="vendor-review-reply">
-                  Your reply
-                </FieldLabel>
-                <Textarea
-                  id="vendor-review-reply"
-                  value={body}
-                  onChange={(event) => setBody(event.target.value)}
-                  placeholder="Thank the buyer and address their feedback…"
-                  rows={4}
-                  maxLength={REVIEW_BODY_MAX}
-                />
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {trimmed.length}/{REVIEW_BODY_MAX}
-                  {tooShort
-                    ? ` · at least ${REVIEW_BODY_MIN} characters`
-                    : null}
-                </p>
-              </Field>
-            ) : null}
-
-            {error ? <p className="text-sm text-destructive">{error}</p> : null}
-          </DialogBody>
-        ) : null}
-
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={resetAndClose}>
-            Close
+        <DialogFooter className="gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="cursor-pointer"
+            onClick={resetAndClose}
+          >
+            Cancel
           </Button>
-          {!alreadyReplied ? (
+          {!blocked ? (
             <Button
               type="button"
+              className="cursor-pointer"
               disabled={!canSubmit}
               onClick={() => {
                 void onSubmit()
@@ -179,7 +154,9 @@ export function ReviewReplyDialog({
             >
               {reply.isPending ? (
                 <Loader2 className="size-4 animate-spin" />
-              ) : null}
+              ) : (
+                <MessageSquareReply className="size-4" />
+              )}
               Post reply
             </Button>
           ) : null}

@@ -1,6 +1,8 @@
 import {
   ChevronLeft,
   ChevronRight,
+  Ellipsis,
+  Eye,
   Loader2,
   MessageSquare,
   MessageSquareReply,
@@ -9,6 +11,12 @@ import {
 
 import { CustomBadge } from "@/components/shared"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Table,
   TableBody,
@@ -34,7 +42,8 @@ type ReviewTableProps = {
   totalPages: number
   onPageChange: (page: number) => void
   onRetry: () => void
-  onOpen: (review: StoreReview) => void
+  onView: (review: StoreReview) => void
+  onReply: (review: StoreReview) => void
 }
 
 export function ReviewTable({
@@ -49,7 +58,8 @@ export function ReviewTable({
   totalPages,
   onPageChange,
   onRetry,
-  onOpen,
+  onView,
+  onReply,
 }: ReviewTableProps) {
   const rangeStart = total === 0 ? 0 : (page - 1) * pageSize + 1
   const rangeEnd = Math.min(page * pageSize, total)
@@ -63,20 +73,23 @@ export function ReviewTable({
             <TableHead>Product</TableHead>
             <TableHead>Replies</TableHead>
             <TableHead>Date</TableHead>
-            <TableHead className="w-28 text-right">Actions</TableHead>
+            <TableHead className="w-16 text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {isLoading ? (
             Array.from({ length: 6 }, (_, index) => (
-              <TableRow key={index} className="hover:bg-transparent">
+              <TableRow
+                key={index}
+                className="pointer-events-none hover:[&>td]:!bg-transparent"
+              >
                 <TableCell colSpan={5} className="px-4 py-3">
                   <div className="h-10 animate-pulse rounded-md bg-muted" />
                 </TableCell>
               </TableRow>
             ))
           ) : errorMessage ? (
-            <TableRow className="hover:bg-transparent">
+            <TableRow className="pointer-events-none hover:[&>td]:!bg-transparent">
               <TableCell colSpan={5} className="px-5 py-16">
                 <div className="flex flex-col items-center text-center">
                   <p className="text-sm font-medium text-destructive">
@@ -94,7 +107,7 @@ export function ReviewTable({
               </TableCell>
             </TableRow>
           ) : items.length === 0 ? (
-            <TableRow className="hover:bg-transparent">
+            <TableRow className="pointer-events-none hover:[&>td]:!bg-transparent">
               <TableCell colSpan={5} className="px-5 py-16">
                 <div className="mx-auto max-w-md text-center">
                   <p className="text-sm font-medium">No reviews yet</p>
@@ -147,15 +160,11 @@ export function ReviewTable({
                   {formatReviewDateTime(review.createdAt)}
                 </TableCell>
                 <TableCell className="px-3 py-2.5 text-right last:pr-4">
-                  <Button
-                    type="button"
-                    variant={review.hasVendorReply ? "outline" : "default"}
-                    size="sm"
-                    onClick={() => onOpen(review)}
-                  >
-                    <MessageSquareReply className="size-3.5" />
-                    {review.hasVendorReply ? "View" : "Reply"}
-                  </Button>
+                  <ReviewRowActions
+                    review={review}
+                    onView={onView}
+                    onReply={onReply}
+                  />
                 </TableCell>
               </TableRow>
             ))
@@ -204,5 +213,51 @@ export function ReviewTable({
         </div>
       ) : null}
     </div>
+  )
+}
+
+function ReviewRowActions({
+  review,
+  onView,
+  onReply,
+}: {
+  review: StoreReview
+  onView: (review: StoreReview) => void
+  onReply: (review: StoreReview) => void
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className="cursor-pointer"
+          aria-label={`Actions for review on ${review.product.name}`}
+        >
+          <Ellipsis />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <DropdownMenuItem
+          className="cursor-pointer"
+          onSelect={() => onView(review)}
+        >
+          <Eye />
+          Details
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="cursor-pointer"
+          disabled={review.hasVendorReply}
+          onSelect={() => onReply(review)}
+        >
+          <MessageSquareReply />
+          Reply
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

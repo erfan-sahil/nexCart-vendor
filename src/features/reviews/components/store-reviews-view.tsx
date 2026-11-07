@@ -20,6 +20,7 @@ import { ApiError } from "@/lib/api/errors"
 import { useDebouncedValue, useStoreReviewsQuery } from "../hooks"
 import { RATING_FILTER_LABEL } from "../labels"
 import type { RatingFilter, StoreReview } from "../types"
+import { ReviewDetailsDialog } from "./review-details-dialog"
 import { ReviewReplyDialog } from "./review-reply-dialog"
 import { ReviewTable } from "./review-table"
 
@@ -30,7 +31,8 @@ export function StoreReviewsView() {
   const [pageSize] = useState(20)
   const [search, setSearch] = useState("")
   const [ratingFilter, setRatingFilter] = useState<RatingFilter>("all")
-  const [selected, setSelected] = useState<StoreReview | null>(null)
+  const [viewing, setViewing] = useState<StoreReview | null>(null)
+  const [replying, setReplying] = useState<StoreReview | null>(null)
   const debouncedSearch = useDebouncedValue(search.trim(), 350)
 
   const params = useMemo(
@@ -53,8 +55,14 @@ export function StoreReviewsView() {
         ? "Could not load reviews."
         : null
 
-  const handleOpen = useCallback((review: StoreReview) => {
-    setSelected(review)
+  const handleView = useCallback((review: StoreReview) => {
+    setReplying(null)
+    setViewing(review)
+  }, [])
+
+  const handleReply = useCallback((review: StoreReview) => {
+    setViewing(null)
+    setReplying(review)
   }, [])
 
   return (
@@ -147,15 +155,17 @@ export function StoreReviewsView() {
           totalPages={pagination?.totalPages ?? 0}
           onPageChange={setPage}
           onRetry={() => void reviewsQuery.refetch()}
-          onOpen={handleOpen}
+          onView={handleView}
+          onReply={handleReply}
         />
       </div>
 
-      <ReviewReplyDialog
-        review={selected}
-        open={Boolean(selected)}
-        onClose={() => setSelected(null)}
+      <ReviewDetailsDialog
+        review={viewing}
+        onClose={() => setViewing(null)}
+        onReply={handleReply}
       />
+      <ReviewReplyDialog review={replying} onClose={() => setReplying(null)} />
     </section>
   )
 }

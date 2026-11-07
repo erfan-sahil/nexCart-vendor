@@ -60,11 +60,7 @@ export function VendorWithdrawalsView() {
     mutationFn: cancelWithdrawal,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["vendor"] })
-      setCancelTarget(null)
       notifySuccess("Withdrawal cancelled")
-    },
-    onError: (err) => {
-      notifyError(err, "Could not cancel this withdrawal.")
     },
   })
 
@@ -204,14 +200,15 @@ export function VendorWithdrawalsView() {
 
       <WithdrawalCancelDialog
         withdrawal={cancelTarget}
-        open={Boolean(cancelTarget)}
         isPending={cancel.isPending}
         onClose={() => {
           if (!cancel.isPending) {
             setCancelTarget(null)
           }
         }}
-        onConfirm={(id) => cancel.mutate(id)}
+        onConfirm={async (id) => {
+          await cancel.mutateAsync(id)
+        }}
       />
     </div>
   )

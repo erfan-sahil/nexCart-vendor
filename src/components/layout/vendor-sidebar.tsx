@@ -1,9 +1,17 @@
 import { useState } from "react"
-import { ChevronRight, LogOut, X } from "lucide-react"
+import { ChevronRight, ChevronUp, LogOut, X } from "lucide-react"
 import { NavLink, useLocation } from "react-router"
 
 import { isNavGroup, NAV, type NavPage } from "@/app/navigation"
 import { BrandLogo } from "@/components/shared"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { useLogout } from "@/features/auth/hooks"
 import { useAuthStore } from "@/features/auth/store"
 import { cn } from "@/lib/utils"
@@ -194,32 +202,62 @@ export function VendorSidebar({
       </nav>
 
       <div className="border-t border-sidebar-border p-3">
-        <div
-          className={cn(
-            "flex items-center gap-3 rounded-lg px-2 py-2",
-            collapsed && "lg:flex-col lg:gap-2 lg:px-0"
-          )}
-        >
-          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-sidebar-accent text-sm font-semibold text-sidebar-accent-foreground">
-            {initial}
-          </span>
-          <div className={cn("min-w-0 flex-1", collapsed && "lg:hidden")}>
-            <p className="truncate text-sm font-medium">{name}</p>
-            <p className="truncate text-xs text-sidebar-foreground/60">
-              {user?.email ?? "Vendor"}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => logout.mutate()}
-            disabled={logout.isPending}
-            className="grid size-8 shrink-0 place-items-center rounded-lg text-sidebar-foreground hover:bg-sidebar-accent disabled:opacity-50"
-            aria-label="Log out"
-            title="Log out"
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className={cn(
+                "flex w-full cursor-pointer items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-sidebar-accent focus-visible:ring-3 focus-visible:ring-sidebar-ring/50 focus-visible:outline-none",
+                collapsed && "lg:justify-center lg:px-0"
+              )}
+              aria-label="Open account menu"
+            >
+              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-sidebar-accent text-sm font-semibold text-sidebar-accent-foreground">
+                {initial}
+              </span>
+              <span className={cn("min-w-0 flex-1", collapsed && "lg:hidden")}>
+                <span className="block truncate text-sm font-medium">
+                  {name}
+                </span>
+                <span className="block truncate text-xs text-sidebar-foreground/60">
+                  {user?.email ?? "Vendor"}
+                </span>
+              </span>
+              <ChevronUp
+                className={cn(
+                  "size-4 shrink-0 text-sidebar-foreground/50",
+                  collapsed && "lg:hidden"
+                )}
+                aria-hidden="true"
+              />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            side={collapsed ? "right" : "top"}
+            align={collapsed ? "end" : "start"}
+            sideOffset={8}
+            className="w-56"
           >
-            <LogOut className="size-4" />
-          </button>
-        </div>
+            <DropdownMenuLabel className="font-normal">
+              <p className="truncate text-sm font-medium text-foreground">
+                {name}
+              </p>
+              <p className="truncate text-xs font-normal text-muted-foreground">
+                {user?.email ?? "Vendor"}
+              </p>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              variant="destructive"
+              className="cursor-pointer"
+              disabled={logout.isPending}
+              onSelect={() => logout.mutate()}
+            >
+              <LogOut />
+              Log out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </aside>
   )
