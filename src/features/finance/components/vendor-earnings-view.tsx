@@ -3,9 +3,9 @@
 import { useQuery } from "@tanstack/react-query"
 
 import { FinanceErrorState, FinanceSummarySkeleton } from "./finance-states"
+import { WalletBalanceGuide } from "./wallet-balance-guide"
 import { WalletSummaryCards } from "./wallet-summary-cards"
 import { getWalletBalances } from "../services/vendor-finance.api"
-import { formatBdt } from "../lib/format"
 
 export function VendorEarningsView() {
   const query = useQuery({
@@ -38,30 +38,7 @@ export function VendorEarningsView() {
         <>
           <WalletSummaryCards balances={balances} />
 
-          <section className="rounded-xl border border-border bg-card p-4 text-card-foreground shadow-sm sm:p-5">
-            <h2 className="text-sm font-semibold">How your balance works</h2>
-            <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-              <li>
-                <span className="font-medium text-foreground">
-                  Pending settlement
-                </span>{" "}
-                ({formatBdt(balances.pendingSettlement)}) — earnings from recent
-                orders before they move to your available balance.
-              </li>
-              <li>
-                <span className="font-medium text-foreground">
-                  Available balance
-                </span>{" "}
-                ({formatBdt(balances.availableBalance)}) — cleared funds you can
-                withdraw anytime from the withdrawals page.
-              </li>
-              <li>
-                <span className="font-medium text-foreground">Withdrawn</span> (
-                {formatBdt(balances.withdrawnBalance)}) — approved by admin and
-                moving through payout (includes completed transfers).
-              </li>
-            </ul>
-          </section>
+          <WalletBalanceGuide balances={balances} />
         </>
       ) : null}
     </div>

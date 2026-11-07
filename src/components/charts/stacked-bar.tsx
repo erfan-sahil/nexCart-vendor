@@ -45,7 +45,7 @@ function StackedBarComponent({
   return (
     <div className={cn("space-y-3", className)}>
       <div
-        className="flex h-3 w-full overflow-hidden rounded-full bg-muted"
+        className="flex h-4 w-full overflow-hidden rounded-full bg-muted"
         role="img"
         aria-label="Stacked distribution bar"
       >

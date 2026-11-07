@@ -2,6 +2,8 @@ import { memo, useMemo } from "react"
 
 import { cn } from "@/lib/utils"
 
+import { getBarChartTheme, type BarChartTone } from "./chart-theme"
+
 export type BarChartPoint = {
   label: string
   value: number
@@ -13,6 +15,7 @@ type BarChartProps = {
   className?: string
   formatValue?: (value: number) => string
   barClassName?: string
+  tone?: BarChartTone
 }
 
 function BarChartComponent({
@@ -20,7 +23,10 @@ function BarChartComponent({
   className,
   formatValue = (value) => String(value),
   barClassName,
+  tone = "brand",
 }: BarChartProps) {
+  const theme = getBarChartTheme(tone)
+
   const maxValue = useMemo(
     () => Math.max(1, ...data.map((point) => point.value)),
     [data]
@@ -39,22 +45,33 @@ function BarChartComponent({
       aria-label="Bar chart"
     >
       {data.map((point) => {
-        const share = Math.max(4, Math.round((point.value / maxValue) * 100))
+        const share = Math.max(6, Math.round((point.value / maxValue) * 100))
         const title =
           point.title ?? `${point.label}: ${formatValue(point.value)}`
+        const isPeak = point.value === maxValue && point.value > 0
 
         return (
           <div
             key={point.label}
             className="flex h-full min-w-0 flex-1 flex-col justify-end gap-2"
           >
-            <div className="flex h-36 items-end">
+            <div className="relative flex h-36 w-full items-end">
               <div
-                className={cn("w-full rounded-md bg-primary", barClassName)}
+                className={cn(
+                  "absolute inset-x-0 top-2 bottom-0 rounded-lg",
+                  theme.trackClassName
+                )}
+                aria-hidden="true"
+              />
+              <div
+                className={cn(
+                  "relative z-10 w-full rounded-lg shadow-sm",
+                  isPeak ? "ring-2 ring-white/80 dark:ring-card/80" : null,
+                  barClassName
+                )}
                 style={{
                   height: `${share}%`,
-                  backgroundImage:
-                    "linear-gradient(to top, var(--brand-deep), var(--brand))",
+                  backgroundImage: theme.gradient,
                 }}
                 title={title}
               >

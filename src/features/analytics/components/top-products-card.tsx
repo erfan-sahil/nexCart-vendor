@@ -2,6 +2,7 @@ import { Link } from "react-router"
 
 import { formatMoney } from "@/lib/format"
 
+import { analyticsPanelClass } from "../lib/analytics-surface"
 import type { VendorAnalytics } from "../types"
 
 type TopProductsCardProps = {
@@ -10,7 +11,7 @@ type TopProductsCardProps = {
 
 export function TopProductsCard({ topProducts }: TopProductsCardProps) {
   return (
-    <article className="rounded-xl border border-border bg-card text-card-foreground shadow-sm">
+    <article className={`overflow-hidden ${analyticsPanelClass}`}>
       <div className="border-b border-border px-4 py-4 sm:px-5">
         <h2 className="text-sm font-semibold">Top products</h2>
         <p className="mt-1 text-xs text-muted-foreground">
