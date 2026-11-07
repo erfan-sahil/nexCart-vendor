@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 
 import { ApiError } from "@/lib/api/errors"
+import { notifyError, notifySuccess } from "@/lib/notify"
 
 import {
   FinanceEmptyState,
@@ -48,6 +49,10 @@ export function VendorWithdrawalsView() {
       setAmount("")
       setFormError(null)
       setPage(1)
+      notifySuccess("Withdrawal requested")
+    },
+    onError: (err) => {
+      notifyError(err, "Could not submit this withdrawal request.")
     },
   })
 
@@ -55,7 +60,7 @@ export function VendorWithdrawalsView() {
     mutationFn: cancelWithdrawal,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["vendor"] })
-      setCancelTarget(null)
+      notifySuccess("Withdrawal cancelled")
     },
   })
 
@@ -82,7 +87,9 @@ export function VendorWithdrawalsView() {
     try {
       await create.mutateAsync(parsed)
     } catch (err) {
-      setFormError(err instanceof ApiError ? err.message : "Request failed.")
+      const message = err instanceof ApiError ? err.message : "Request failed."
+
+      setFormError(message)
     }
   }
 
@@ -193,14 +200,15 @@ export function VendorWithdrawalsView() {
 
       <WithdrawalCancelDialog
         withdrawal={cancelTarget}
-        open={Boolean(cancelTarget)}
         isPending={cancel.isPending}
         onClose={() => {
           if (!cancel.isPending) {
             setCancelTarget(null)
           }
         }}
-        onConfirm={(id) => cancel.mutate(id)}
+        onConfirm={async (id) => {
+          await cancel.mutateAsync(id)
+        }}
       />
     </div>
   )

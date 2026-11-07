@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator"
 import { useUpdateStore } from "@/features/store/hooks"
 import type { VendorStore } from "@/features/store/types"
 import { ApiError } from "@/lib/api/errors"
+import { notifyError, notifySuccess } from "@/lib/notify"
 import { cn } from "@/lib/utils"
 
 import {
@@ -174,6 +175,7 @@ export function PayoutDetailsForm({ store }: PayoutDetailsFormProps) {
       form.reset(payoutFromStore(saved))
       setEditing(false)
       setNotice("Payout details updated")
+      notifySuccess("Payout details updated")
     } catch (error) {
       const apiError =
         error instanceof ApiError
@@ -194,6 +196,8 @@ export function PayoutDetailsForm({ store }: PayoutDetailsFormProps) {
       if (mapped.message) {
         form.setError("root", { message: mapped.message })
       }
+
+      notifyError(error, mapped.message ?? apiError.message)
     }
   }
 

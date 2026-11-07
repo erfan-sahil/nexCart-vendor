@@ -9,6 +9,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { ApiError } from "@/lib/api/errors"
+import { notifyError, notifySuccess, notifyWarning } from "@/lib/notify"
 
 import {
   MAX_PRODUCT_IMAGE_BYTES,
@@ -106,17 +107,35 @@ export function ProductImageField({
       }
 
       onChange([...images, ...uploaded])
+
+      if (uploaded.length === 1) {
+        notifySuccess("Image uploaded")
+      } else if (uploaded.length > 1) {
+        notifySuccess(`${uploaded.length} images uploaded`)
+      }
+
+      if (problem) {
+        notifyWarning(problem)
+      }
+
       setLocalError(problem)
     } catch (uploadError) {
       if (uploaded.length > 0) {
         onChange([...images, ...uploaded])
+        notifySuccess(
+          uploaded.length === 1
+            ? "Image uploaded"
+            : `${uploaded.length} images uploaded`
+        )
       }
 
-      setLocalError(
+      const message =
         uploadError instanceof ApiError
           ? uploadError.message
           : "Could not upload this image. Please try again."
-      )
+
+      setLocalError(message)
+      notifyError(uploadError, message)
     } finally {
       setUploading(false)
       onPendingChange?.(false)

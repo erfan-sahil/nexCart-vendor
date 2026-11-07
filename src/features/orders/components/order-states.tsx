@@ -1,19 +1,23 @@
 import { Button } from "@/components/ui/button"
+import { TableSkeletonHeader } from "@/components/ui/table"
 import { ApiError } from "@/lib/api/errors"
 
 export function OrderTableSkeleton() {
   return (
-    <div className="divide-y divide-border" aria-hidden="true">
-      {Array.from({ length: 6 }, (_, index) => (
-        <div key={index} className="flex items-center gap-3 px-4 py-4">
-          <div className="flex-1 space-y-2">
-            <div className="h-3 w-40 max-w-full animate-pulse rounded bg-muted" />
-            <div className="h-3 w-24 animate-pulse rounded bg-muted" />
+    <div aria-hidden="true">
+      <TableSkeletonHeader columns={6} />
+      <div className="divide-y divide-border">
+        {Array.from({ length: 6 }, (_, index) => (
+          <div key={index} className="flex items-center gap-3 px-4 py-4">
+            <div className="flex-1 space-y-2">
+              <div className="h-3 w-40 max-w-full animate-pulse rounded bg-muted" />
+              <div className="h-3 w-24 animate-pulse rounded bg-muted" />
+            </div>
+            <div className="h-3 w-20 animate-pulse rounded bg-muted" />
+            <div className="h-3 w-16 animate-pulse rounded bg-muted" />
           </div>
-          <div className="h-3 w-20 animate-pulse rounded bg-muted" />
-          <div className="h-3 w-16 animate-pulse rounded bg-muted" />
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   )
 }

@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { PasswordInput } from "@/components/ui/password-input"
 import { ApiError } from "@/lib/api/errors"
+import { notifyError, notifySuccess } from "@/lib/notify"
 
 import { useLogin } from "../hooks"
 
@@ -49,12 +50,15 @@ export function LoginForm() {
 
     try {
       await login.mutateAsync(values)
+      notifySuccess("Signed in")
     } catch (err) {
-      setError(
+      const message =
         err instanceof ApiError
           ? err.message
           : "Could not sign in. Please try again."
-      )
+
+      setError(message)
+      notifyError(err, message)
     }
   }
 

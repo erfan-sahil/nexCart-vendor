@@ -9,71 +9,61 @@ import {
   Send,
   Star,
   Tag,
+  type LucideIcon,
 } from "lucide-react"
 
-import {
-  StatusBadge,
-  type StatusBadgeTone,
-} from "@/components/shared/status-badge"
+import { CustomBadge, type BadgeColor } from "@/components/shared"
 
 import { PRODUCT_APPROVAL_LABEL, PRODUCT_STATUS_LABEL } from "../constants"
 import type { Product, ProductApprovalStatus, ProductStatus } from "../types"
 
 const STATUS_BADGE: Record<
   ProductStatus,
-  { icon: typeof CircleCheck; tone: StatusBadgeTone }
+  { icon: LucideIcon; color: BadgeColor }
 > = {
-  active: { icon: CircleCheck, tone: "success" },
-  archived: { icon: Archive, tone: "neutral" },
+  active: { icon: CircleCheck, color: "success" },
+  archived: { icon: Archive, color: "neutral" },
 }
 
 const APPROVAL_BADGE: Record<
   ProductApprovalStatus,
-  { icon: typeof Clock; tone: StatusBadgeTone }
+  { icon: LucideIcon; color: BadgeColor }
 > = {
-  pending: { icon: Clock, tone: "warning" },
-  submitted: { icon: Send, tone: "warning" },
-  approved: { icon: BadgeCheck, tone: "success" },
-  rejected: { icon: CircleX, tone: "danger" },
+  pending: { icon: Clock, color: "warning" },
+  submitted: { icon: Send, color: "warning" },
+  approved: { icon: BadgeCheck, color: "success" },
+  rejected: { icon: CircleX, color: "danger" },
 }
 
 export function ProductStatusBadges({ product }: { product: Product }) {
   const status = STATUS_BADGE[product.status]
   const approval = APPROVAL_BADGE[product.approvalStatus]
-  const StatusIcon = status.icon
-  const ApprovalIcon = approval.icon
 
   return (
     <div className="flex flex-wrap gap-1.5">
-      <StatusBadge icon={StatusIcon} tone={status.tone}>
-        {PRODUCT_STATUS_LABEL[product.status]}
-      </StatusBadge>
-      <StatusBadge
-        icon={ApprovalIcon}
-        tone={approval.tone}
+      <CustomBadge
+        name={PRODUCT_STATUS_LABEL[product.status]}
+        color={status.color}
+        icon={status.icon}
+      />
+      <CustomBadge
+        name={PRODUCT_APPROVAL_LABEL[product.approvalStatus]}
+        color={approval.color}
+        icon={approval.icon}
         title={product.reviewNote || undefined}
-      >
-        {PRODUCT_APPROVAL_LABEL[product.approvalStatus]}
-      </StatusBadge>
-      <StatusBadge
+      />
+      <CustomBadge
+        name={product.isPublished ? "Published" : "Unpublished"}
+        color={product.isPublished ? "brand" : "neutral"}
         icon={product.isPublished ? Eye : EyeOff}
-        tone={product.isPublished ? "brand" : "neutral"}
-      >
-        {product.isPublished ? "Published" : "Unpublished"}
-      </StatusBadge>
+      />
       {product.isFeatured ? (
-        <StatusBadge icon={Star} tone="brand">
-          Featured
-        </StatusBadge>
+        <CustomBadge name="Featured" color="brand" icon={Star} />
       ) : null}
     </div>
   )
 }
 
 export function ProductTagBadge({ tag }: { tag: string }) {
-  return (
-    <StatusBadge icon={Tag} tone="neutral">
-      {tag}
-    </StatusBadge>
-  )
+  return <CustomBadge name={tag} color="neutral" icon={Tag} />
 }

@@ -1,9 +1,12 @@
+import { ChevronRight } from "lucide-react"
 import { Link } from "react-router"
 
 import { OrderStatusBadge } from "@/features/orders/components/order-status-badge"
 import { formatItemCount } from "@/features/orders/lib/format"
+import { Button } from "@/components/ui/button"
 import { formatMoney } from "@/lib/format"
 
+import { dashboardPanelClass } from "../lib/dashboard-surface"
 import type { VendorDashboardOverview } from "../types"
 
 type RecentOrdersCardProps = {
@@ -12,20 +15,25 @@ type RecentOrdersCardProps = {
 
 export function RecentOrdersCard({ recentOrders }: RecentOrdersCardProps) {
   return (
-    <section className="rounded-xl border border-border bg-card text-card-foreground shadow-sm">
-      <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-4 sm:px-5">
+    <section className={dashboardPanelClass}>
+      <div className="flex items-start justify-between gap-3 border-b border-border/80 px-4 py-4 sm:px-6">
         <div>
           <h2 className="text-sm font-semibold">Recent orders</h2>
           <p className="mt-1 text-xs text-muted-foreground">
             Latest orders for this store.
           </p>
         </div>
-        <Link
-          to="/orders"
-          className="shrink-0 text-xs font-medium text-brand-text hover:underline"
+        <Button
+          variant="outline"
+          size="xs"
+          className="shrink-0 border-border/80 text-foreground shadow-none"
+          asChild
         >
-          View all
-        </Link>
+          <Link to="/orders">
+            View all
+            <ChevronRight aria-hidden="true" />
+          </Link>
+        </Button>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[36rem] text-left text-sm">

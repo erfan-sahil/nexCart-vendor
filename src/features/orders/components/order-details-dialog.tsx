@@ -4,14 +4,15 @@ import { Loader2, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { ApiError } from "@/lib/api/errors"
+import { notifyError, notifySuccess } from "@/lib/notify"
 import { cn } from "@/lib/utils"
 
 import { vendorOrderStatusLabel } from "../lib/normalize-order-status"
@@ -74,7 +75,10 @@ function OrderDetails({
 
   return (
     <Dialog open onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="flex h-[min(44rem,calc(100dvh-2rem))] max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
+      <DialogContent
+        shell
+        className="h-[min(44rem,calc(100dvh-2rem))] sm:max-w-3xl"
+      >
         {detail.isPending ? (
           <OrderDetailsLoading />
         ) : detail.isError || !order ? (
@@ -99,15 +103,13 @@ function OrderDetailsLoading() {
 function OrderDetailsError({ onClose }: { onClose: () => void }) {
   return (
     <>
-      <DialogHeader className="shrink-0 border-b border-border px-5 py-4 pr-12 text-left">
-        <DialogTitle className="text-lg leading-snug font-semibold">
-          Order not found
-        </DialogTitle>
+      <DialogHeader>
+        <DialogTitle>Order not found</DialogTitle>
         <DialogDescription>
           This vendor order could not be loaded.
         </DialogDescription>
       </DialogHeader>
-      <DialogFooter className="mx-0 mb-0 shrink-0 rounded-none border-border bg-card px-5 py-3">
+      <DialogFooter>
         <Button
           type="button"
           variant="outline"
@@ -143,12 +145,19 @@ function OrderDetailsBody({
     vendorReturnShipments
   )
 
-  const run = async (fn: () => Promise<unknown>) => {
+  const run = async (
+    fn: () => Promise<unknown>,
+    successMessage = "Order updated"
+  ) => {
     setError(null)
     try {
       await fn()
+      notifySuccess(successMessage)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Action failed.")
+      const message = err instanceof ApiError ? err.message : "Action failed."
+
+      setError(message)
+      notifyError(err, message)
     }
   }
 
@@ -163,7 +172,10 @@ function OrderDetailsBody({
           className="cursor-pointer"
           disabled={busy}
           onClick={() =>
-            run(() => confirmVendorReturn.mutateAsync(shipment.id))
+            run(
+              () => confirmVendorReturn.mutateAsync(shipment.id),
+              "Return shipment confirmed"
+            )
           }
         >
           Confirm returned products received
@@ -218,13 +230,11 @@ function OrderDetailsBody({
 
   return (
     <>
-      <DialogHeader className="shrink-0 border-b border-border px-5 py-4 pr-12 text-left">
+      <DialogHeader>
         <p className="text-xs font-medium text-brand-text">
           {order.storeName || "Store order"}
         </p>
-        <DialogTitle className="mt-1 text-lg leading-snug font-semibold">
-          {order.vendorOrderNumber}
-        </DialogTitle>
+        <DialogTitle className="mt-1">{order.vendorOrderNumber}</DialogTitle>
         <DialogDescription className="sr-only">
           Order details for {order.vendorOrderNumber}
         </DialogDescription>
@@ -239,107 +249,102 @@ function OrderDetailsBody({
         </div>
       </DialogHeader>
 
-      <ScrollArea type="auto" className="min-h-0 flex-1">
-        <div className="flex flex-col gap-6 px-5 py-5">
-          <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <Fact
-              label="Subtotal"
-              value={formatMoney(order.itemsSubtotal)}
-              detail={formatItemCount(order.items.length)}
-            />
-            <Fact
-              label="Status"
-              value={vendorOrderStatusLabel(order.status)}
-              detail={`Parent ${order.orderNumber}`}
-            />
-            <Fact
-              label="Created"
-              value={formatOrderDate(order.createdAt)}
-              detail={formatOrderDateTime(order.createdAt)}
-            />
-            <Fact
-              label="Updated"
-              value={formatOrderDate(order.updatedAt)}
-              detail={formatOrderDateTime(order.updatedAt)}
-            />
-          </dl>
+      <DialogBody className="flex flex-col gap-6">
+        <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <Fact
+            label="Subtotal"
+            value={formatMoney(order.itemsSubtotal)}
+            detail={formatItemCount(order.items.length)}
+          />
+          <Fact
+            label="Status"
+            value={vendorOrderStatusLabel(order.status)}
+            detail={`Parent ${order.orderNumber}`}
+          />
+          <Fact
+            label="Created"
+            value={formatOrderDate(order.createdAt)}
+            detail={formatOrderDateTime(order.createdAt)}
+          />
+          <Fact
+            label="Updated"
+            value={formatOrderDate(order.updatedAt)}
+            detail={formatOrderDateTime(order.updatedAt)}
+          />
+        </dl>
 
-          {error ? (
-            <p
-              role="alert"
-              className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive"
-            >
-              {error}
-            </p>
-          ) : null}
-
-          <Section
-            title="Line items"
-            meta={formatItemCount(order.items.length)}
+        {error ? (
+          <p
+            role="alert"
+            className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive"
           >
-            <ItemList items={order.items} />
+            {error}
+          </p>
+        ) : null}
+
+        <Section title="Line items" meta={formatItemCount(order.items.length)}>
+          <ItemList items={order.items} />
+        </Section>
+
+        {rejectionSummary.some((row) => row.rejectedQty > 0) ? (
+          <Section title="Customer acceptance">
+            <OrderCustomerAcceptanceSummary summary={rejectionSummary} />
           </Section>
+        ) : null}
 
-          {rejectionSummary.some((row) => row.rejectedQty > 0) ? (
-            <Section title="Customer acceptance">
-              <OrderCustomerAcceptanceSummary summary={rejectionSummary} />
-            </Section>
-          ) : null}
+        <Section
+          title="Inbound batches"
+          meta={`${order.inboundBatches.length} shipment${
+            order.inboundBatches.length === 1 ? "" : "s"
+          }`}
+        >
+          <OrderInboundBatches batches={order.inboundBatches} />
+        </Section>
 
-          <Section
-            title="Inbound batches"
-            meta={`${order.inboundBatches.length} shipment${
-              order.inboundBatches.length === 1 ? "" : "s"
-            }`}
-          >
-            <OrderInboundBatches batches={order.inboundBatches} />
+        {order.rejectReturns.length > 0 ? (
+          <Section title="Warehouse reject returns">
+            <OrderRejectReturns returns={order.rejectReturns} />
           </Section>
+        ) : null}
 
-          {order.rejectReturns.length > 0 ? (
-            <Section title="Warehouse reject returns">
-              <OrderRejectReturns returns={order.rejectReturns} />
-            </Section>
-          ) : null}
-
-          {vendorReturnShipments.length > 0 ? (
-            <Section title="Returned products to you">
-              <OrderVendorReturnShipments shipments={vendorReturnShipments} />
-            </Section>
-          ) : null}
-
-          {order.status === "delivery_failed" ||
-          order.status === "customer_rejected" ||
-          order.status === "partially_rejected" ? (
-            <Section title="Delivery return">
-              <OrderDeliveryReturnNotice status={order.status} />
-            </Section>
-          ) : null}
-
-          <Section title="Record">
-            <FactList
-              items={[
-                { label: "Vendor order", value: order.vendorOrderNumber },
-                { label: "Parent order", value: order.orderNumber },
-                { label: "Store", value: order.storeName || "—" },
-                {
-                  label: "Warehouse progress",
-                  value: formatQtyProgress(order),
-                },
-                {
-                  label: "Created",
-                  value: formatOrderDateTime(order.createdAt),
-                },
-                {
-                  label: "Updated",
-                  value: formatOrderDateTime(order.updatedAt),
-                },
-              ]}
-            />
+        {vendorReturnShipments.length > 0 ? (
+          <Section title="Returned products to you">
+            <OrderVendorReturnShipments shipments={vendorReturnShipments} />
           </Section>
-        </div>
-      </ScrollArea>
+        ) : null}
 
-      <DialogFooter className="mx-0 mb-0 shrink-0 flex-wrap rounded-none border-border bg-card px-5 py-3">
+        {order.status === "delivery_failed" ||
+        order.status === "customer_rejected" ||
+        order.status === "partially_rejected" ? (
+          <Section title="Delivery return">
+            <OrderDeliveryReturnNotice status={order.status} />
+          </Section>
+        ) : null}
+
+        <Section title="Record">
+          <FactList
+            items={[
+              { label: "Vendor order", value: order.vendorOrderNumber },
+              { label: "Parent order", value: order.orderNumber },
+              { label: "Store", value: order.storeName || "—" },
+              {
+                label: "Warehouse progress",
+                value: formatQtyProgress(order),
+              },
+              {
+                label: "Created",
+                value: formatOrderDateTime(order.createdAt),
+              },
+              {
+                label: "Updated",
+                value: formatOrderDateTime(order.updatedAt),
+              },
+            ]}
+          />
+        </Section>
+      </DialogBody>
+
+      <DialogFooter className="flex-wrap">
         {primaryActions}
         <Button
           type="button"

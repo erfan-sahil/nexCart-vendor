@@ -1,9 +1,6 @@
-const countFormat = new Intl.NumberFormat("en-US")
+import { formatMoney } from "@/lib/format"
 
-const moneyFormat = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-})
+const countFormat = new Intl.NumberFormat("en-US")
 
 const dateFormat = new Intl.DateTimeFormat("en", {
   month: "short",
@@ -16,7 +13,7 @@ export function formatCount(value: number) {
 }
 
 export function formatSales(value: number) {
-  return moneyFormat.format(value)
+  return formatMoney(value)
 }
 
 export function formatJoined(value: string) {

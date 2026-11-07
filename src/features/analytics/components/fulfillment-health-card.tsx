@@ -1,5 +1,6 @@
 import { formatPercent } from "@/lib/format"
 
+import { analyticsPanelClass } from "../lib/analytics-surface"
 import type { VendorAnalytics } from "../types"
 
 type FulfillmentHealthCardProps = {
@@ -33,7 +34,7 @@ export function FulfillmentHealthCard({
   ]
 
   return (
-    <article className="rounded-xl border border-border bg-card p-4 text-card-foreground shadow-sm sm:p-5">
+    <article className={`p-4 sm:p-6 ${analyticsPanelClass}`}>
       <h2 className="text-sm font-semibold">Fulfillment health</h2>
       <p className="mt-1 text-xs text-muted-foreground">
         Share of orders in this period by outcome.
@@ -42,7 +43,7 @@ export function FulfillmentHealthCard({
         {tiles.map((tile) => (
           <div
             key={tile.label}
-            className="rounded-lg border border-border/80 bg-muted/20 p-3"
+            className="rounded-xl border border-border/80 bg-muted/25 p-4 ring-1 ring-black/[0.02] dark:ring-white/[0.04]"
           >
             <dt className="text-xs text-muted-foreground">{tile.label}</dt>
             <dd className="mt-1 text-xl font-semibold tabular-nums">

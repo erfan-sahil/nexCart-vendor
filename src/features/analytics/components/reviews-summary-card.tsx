@@ -3,6 +3,7 @@ import { Link } from "react-router"
 import { StackedBar } from "@/components/charts"
 import { ReviewStars } from "@/features/reviews/components/review-stars"
 
+import { analyticsPanelClass } from "../lib/analytics-surface"
 import type { VendorAnalytics } from "../types"
 
 type ReviewsSummaryCardProps = {
@@ -23,7 +24,7 @@ export function ReviewsSummaryCard({ reviews }: ReviewsSummaryCardProps) {
   }))
 
   return (
-    <article className="rounded-xl border border-border bg-card p-4 text-card-foreground shadow-sm sm:p-5">
+    <article className={`p-4 sm:p-6 ${analyticsPanelClass}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold">Reviews</h2>

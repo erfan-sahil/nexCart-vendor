@@ -1,6 +1,6 @@
 import { Building2, Smartphone, Wallet, type LucideIcon } from "lucide-react"
 
-import { StatusBadge } from "@/components/shared"
+import { CustomBadge } from "@/components/shared"
 import { Button } from "@/components/ui/button"
 import { useMyStore } from "@/features/store/hooks"
 import type { StorePayout, VendorStore } from "@/features/store/types"
@@ -125,12 +125,11 @@ function PayoutOverview({ store }: { store: VendorStore }) {
               <h2 className="truncate text-base font-medium sm:text-lg">
                 {configured ? meta.destination : "No payout account"}
               </h2>
-              <StatusBadge
+              <CustomBadge
+                name={configured ? "Configured" : "Not configured"}
+                color={configured ? "success" : "neutral"}
                 icon={Icon}
-                tone={configured ? "success" : "neutral"}
-              >
-                {configured ? "Configured" : "Not configured"}
-              </StatusBadge>
+              />
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
               {configured

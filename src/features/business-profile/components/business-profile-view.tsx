@@ -7,18 +7,19 @@ import {
   EyeOff,
   IdCard,
   Pencil,
+  MessageSquare,
   ShieldAlert,
   ShieldQuestion,
 } from "lucide-react"
 import { useForm, useWatch } from "react-hook-form"
 
-import { StatusBadge } from "@/components/shared"
-import { Badge } from "@/components/ui/badge"
+import { CustomBadge } from "@/components/shared"
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { ApiError } from "@/lib/api/errors"
+import { notifyError, notifySuccess } from "@/lib/notify"
 import { cn } from "@/lib/utils"
 
 import { useUpdateBusinessRecords } from "../hooks"
@@ -185,12 +186,12 @@ export function BusinessProfileView({ application }: BusinessProfileViewProps) {
   const canEdit = application.status === "approved"
   const statusBadge =
     application.status === "approved"
-      ? { tone: "success" as const, icon: CircleCheck }
+      ? { color: "success" as const, icon: CircleCheck }
       : application.status === "rejected"
-        ? { tone: "danger" as const, icon: CircleOff }
+        ? { color: "danger" as const, icon: CircleOff }
         : application.status === "more_info_required"
-          ? { tone: "warning" as const, icon: ShieldQuestion }
-          : { tone: "neutral" as const, icon: ShieldAlert }
+          ? { color: "warning" as const, icon: ShieldQuestion }
+          : { color: "neutral" as const, icon: ShieldAlert }
   const businessType = business.businessType
     ? BUSINESS_TYPE_LABEL[business.businessType]
     : "—"
@@ -221,6 +222,7 @@ export function BusinessProfileView({ application }: BusinessProfileViewProps) {
       form.reset(businessRecordsFromApplication(saved))
       setEditing(false)
       setNotice("Business records updated")
+      notifySuccess("Business records updated")
     } catch (error) {
       const apiError =
         error instanceof ApiError
@@ -241,6 +243,8 @@ export function BusinessProfileView({ application }: BusinessProfileViewProps) {
       if (mapped.message) {
         form.setError("root", { message: mapped.message })
       }
+
+      notifyError(error, mapped.message ?? apiError.message)
     }
   }
 
@@ -256,26 +260,23 @@ export function BusinessProfileView({ application }: BusinessProfileViewProps) {
             <h2 className="truncate text-sm font-medium sm:text-base">
               {display(business.storeName)}
             </h2>
-            <StatusBadge icon={statusBadge.icon} tone={statusBadge.tone}>
-              {application.status === "approved"
-                ? "Verified"
-                : STATUS_LABEL[application.status]}
-            </StatusBadge>
+            <CustomBadge
+              name={
+                application.status === "approved"
+                  ? "Verified"
+                  : STATUS_LABEL[application.status]
+              }
+              color={statusBadge.color}
+              icon={statusBadge.icon}
+            />
             {reviewNote ? (
-              <Badge
-                variant="secondary"
-                title="Review note"
-                className={cn(
-                  application.status === "approved" &&
-                    "border-transparent bg-emerald-500/10 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
-                  application.status === "rejected" &&
-                    "border-transparent bg-destructive/10 text-destructive",
-                  application.status === "more_info_required" &&
-                    "border-transparent bg-amber-500/10 text-amber-800 dark:bg-amber-500/15 dark:text-amber-200"
-                )}
-              >
-                {reviewNote}
-              </Badge>
+              <CustomBadge
+                name={reviewNote}
+                color={statusBadge.color}
+                icon={MessageSquare}
+                title={reviewNote}
+                className="max-w-64"
+              />
             ) : null}
           </div>
           <p className="mt-0.5 text-sm text-muted-foreground">

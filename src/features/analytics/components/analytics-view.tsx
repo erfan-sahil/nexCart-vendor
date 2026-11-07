@@ -2,6 +2,7 @@
 
 import { RangeSelect } from "@/components/shared/range-select"
 
+import { analyticsPanelClass } from "../lib/analytics-surface"
 import {
   AnalyticsEmptyState,
   AnalyticsErrorState,
@@ -63,24 +64,39 @@ export function AnalyticsView() {
     data.kpis.grossSales.current === 0 && data.kpis.orders.current === 0
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-muted-foreground">
-          Sales, product, and fulfillment performance for the last {label}.
-        </p>
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
+      <header
+        className={`flex flex-col gap-4 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6 ${analyticsPanelClass}`}
+      >
+        <div>
+          <p className="text-xs font-medium tracking-wider text-brand-text uppercase">
+            Insights
+          </p>
+          <h1 className="mt-1 font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
+            Analytics
+          </h1>
+          <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+            Sales, product, and fulfillment performance for the last {label},
+            compared to the prior {label}.
+          </p>
+        </div>
         <RangeSelect
           value={range}
           onValueChange={setRange}
           options={RANGE_OPTIONS}
           ariaLabel="Analytics date range"
         />
-      </div>
+      </header>
 
       <AnalyticsKpis kpis={data.kpis} rangeLabel={label} />
 
       {noSales ? <AnalyticsEmptyState /> : null}
 
-      <RevenueTrendCard series={data.series} bucket={data.bucket} />
+      <RevenueTrendCard
+        series={data.series}
+        bucket={data.bucket}
+        rangeLabel={label}
+      />
 
       <section className="grid gap-4 xl:grid-cols-2">
         <OrderStatusCard statusBreakdown={data.statusBreakdown} />

@@ -22,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { canManageVariants } from "@/features/auth/lib/permissions"
 import { useAuthStore } from "@/features/auth/store"
 import { ApiError } from "@/lib/api/errors"
+import { notifyError, notifySuccess, notifyWarning } from "@/lib/notify"
 
 import { PRODUCT_STATUS_LABEL, PRODUCT_STATUSES } from "../constants"
 import {
@@ -61,6 +62,7 @@ import {
   productKeys,
   updateVariant,
   type CreateVariantPayload,
+  type UpdateVariantPayload,
 } from "../services"
 
 import { ProductAttributeFields } from "./product-attribute-fields"
@@ -167,11 +169,11 @@ function toVariantUpdate({
   isDefault,
   attributes,
   ...rest
-}: CreateVariantPayload) {
+}: CreateVariantPayload): UpdateVariantPayload {
   return {
     ...rest,
+    isDefault,
     ...(simple ? {} : { attributes }),
-    ...(isDefault ? { isDefault: true } : {}),
   }
 }
 
@@ -366,6 +368,7 @@ export function ProductForm({
           })
         }
 
+        notifySuccess("Product updated")
         onSaved()
         return
       }
@@ -383,9 +386,15 @@ export function ProductForm({
       if (result.approvalWarning) {
         setSavedWithoutApproval(true)
         form.setError("root", { message: result.approvalWarning })
+        notifyWarning(result.approvalWarning)
         return
       }
 
+      notifySuccess(
+        values.status === "active"
+          ? "Product created and sent for approval"
+          : "Product saved as draft"
+      )
       onSaved()
     } catch (error) {
       if (error instanceof ApiError) {
@@ -408,14 +417,16 @@ export function ProductForm({
           form.setError("root", { message: next.message })
         }
 
+        notifyError(error)
         return
       }
 
-      form.setError("root", {
-        message: editing
-          ? "Could not update this product. Please try again."
-          : "Could not create this product. Please try again.",
-      })
+      const fallback = editing
+        ? "Could not update this product. Please try again."
+        : "Could not create this product. Please try again."
+
+      form.setError("root", { message: fallback })
+      notifyError(error, fallback)
     }
   }
 

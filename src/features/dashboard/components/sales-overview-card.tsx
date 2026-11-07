@@ -1,6 +1,7 @@
 import { BarChart } from "@/components/charts"
 import { formatBucketLabel, formatCompactMoney } from "@/lib/format"
 
+import { dashboardPanelClass } from "../lib/dashboard-surface"
 import type { VendorDashboardOverview } from "../types"
 
 type SalesOverviewCardProps = {
@@ -21,7 +22,7 @@ export function SalesOverviewCard({
   }))
 
   return (
-    <article className="rounded-xl border border-border bg-card p-4 text-card-foreground shadow-sm sm:p-5 xl:col-span-3">
+    <article className={`p-4 sm:p-6 xl:col-span-3 ${dashboardPanelClass}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold">Sales</h2>
@@ -29,7 +30,7 @@ export function SalesOverviewCard({
             Gross sales by day for the last {rangeLabel}.
           </p>
         </div>
-        <p className="text-sm font-medium text-brand-text tabular-nums">
+        <p className="rounded-full bg-brand-soft px-3 py-1 text-sm font-semibold text-brand-text tabular-nums">
           {formatCompactMoney(total)}
         </p>
       </div>

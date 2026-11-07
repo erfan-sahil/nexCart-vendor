@@ -1,9 +1,6 @@
-import type { ProductOffer } from "../types"
+import { formatMoney as formatTkMoney } from "@/lib/format"
 
-const priceFormat = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-})
+import type { ProductOffer } from "../types"
 
 const dateFormat = new Intl.DateTimeFormat("en", {
   month: "short",
@@ -12,7 +9,7 @@ const dateFormat = new Intl.DateTimeFormat("en", {
 })
 
 export function formatMoney(value: number) {
-  return priceFormat.format(value)
+  return formatTkMoney(value)
 }
 
 export function formatPriceRange(offer: ProductOffer) {
@@ -23,10 +20,10 @@ export function formatPriceRange(offer: ProductOffer) {
   }
 
   if (minPrice === maxPrice) {
-    return priceFormat.format(minPrice)
+    return formatMoney(minPrice)
   }
 
-  return `${priceFormat.format(minPrice)} – ${priceFormat.format(maxPrice)}`
+  return `${formatMoney(minPrice)} – ${formatMoney(maxPrice)}`
 }
 
 export function formatOriginalPriceRange(offer: ProductOffer) {
@@ -44,10 +41,10 @@ export function formatOriginalPriceRange(offer: ProductOffer) {
   }
 
   if (minOriginalPrice === maxOriginalPrice) {
-    return priceFormat.format(minOriginalPrice)
+    return formatMoney(minOriginalPrice)
   }
 
-  return `${priceFormat.format(minOriginalPrice)} – ${priceFormat.format(maxOriginalPrice)}`
+  return `${formatMoney(minOriginalPrice)} – ${formatMoney(maxOriginalPrice)}`
 }
 
 export function formatProductDate(value: string) {

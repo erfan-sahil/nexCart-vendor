@@ -23,7 +23,7 @@ function TabsList({
     <TabsPrimitive.List
       data-slot="tabs-list"
       className={cn(
-        "inline-flex h-9 w-fit max-w-full items-center justify-start gap-1 overflow-x-auto rounded-lg bg-muted p-1 text-muted-foreground",
+        "inline-flex h-9 w-fit max-w-full items-center gap-0.5 overflow-x-auto rounded-lg bg-muted p-1 text-muted-foreground",
         className
       )}
       {...props}
@@ -39,10 +39,15 @@ function TabsTrigger({
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-md px-3 py-1 text-sm font-medium whitespace-nowrap transition-all",
-        "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+        "inline-flex h-7 shrink-0 cursor-pointer items-center justify-center rounded-md px-3 text-sm font-medium whitespace-nowrap",
+        "text-muted-foreground transition-colors duration-150",
+        "hover:bg-background/60 hover:text-foreground",
+        "focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:outline-none",
         "disabled:pointer-events-none disabled:opacity-50",
-        "data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm",
+        "data-[state=active]:bg-background data-[state=active]:text-foreground",
+        "data-[state=active]:shadow-sm data-[state=active]:ring-1 data-[state=active]:ring-border/60",
+        "data-[state=active]:hover:bg-background",
+        "dark:hover:bg-background/25 dark:data-[state=active]:bg-card",
         className
       )}
       {...props}

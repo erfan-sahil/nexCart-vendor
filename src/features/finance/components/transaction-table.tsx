@@ -4,9 +4,16 @@ import {
   tableFeatures,
   useTable,
 } from "@tanstack/react-table"
-import { Ellipsis, Eye } from "lucide-react"
+import {
+  Clock,
+  Ellipsis,
+  Eye,
+  Lock,
+  Wallet,
+  type LucideIcon,
+} from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
+import { CustomBadge, type BadgeColor } from "@/components/shared"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -49,11 +56,7 @@ const columns = columnHelper.columns([
   }),
   columnHelper.accessor("account", {
     header: "Account",
-    cell: ({ getValue }) => (
-      <Badge variant="secondary" className="max-w-full truncate font-normal">
-        {ledgerAccountLabel(getValue())}
-      </Badge>
-    ),
+    cell: ({ getValue }) => <AccountBadge account={getValue()} />,
   }),
   columnHelper.accessor("vendorOrderId", {
     header: "Order",
@@ -211,6 +214,28 @@ export function TransactionTable({
         </TableBody>
       </Table>
     </div>
+  )
+}
+
+const ACCOUNT_BADGE: Record<string, { color: BadgeColor; icon: LucideIcon }> = {
+  pending: { color: "warning", icon: Clock },
+  available: { color: "success", icon: Wallet },
+  reserved: { color: "info", icon: Lock },
+}
+
+function AccountBadge({ account }: { account: string }) {
+  const badge = ACCOUNT_BADGE[account] ?? {
+    color: "neutral" as const,
+    icon: Wallet,
+  }
+
+  return (
+    <CustomBadge
+      name={ledgerAccountLabel(account)}
+      color={badge.color}
+      icon={badge.icon}
+      className="max-w-full"
+    />
   )
 }
 

@@ -1,6 +1,8 @@
-import { memo, useMemo } from "react"
+import { memo, useId, useMemo } from "react"
 
 import { cn } from "@/lib/utils"
+
+import { getAreaChartTheme, type AreaChartTone } from "./chart-theme"
 
 export type AreaChartPoint = {
   label: string
@@ -13,6 +15,7 @@ type AreaChartProps = {
   className?: string
   formatValue?: (value: number) => string
   height?: number
+  tone?: AreaChartTone
 }
 
 function AreaChartComponent({
@@ -20,7 +23,11 @@ function AreaChartComponent({
   className,
   formatValue = (value) => String(value),
   height = 160,
+  tone = "brand",
 }: AreaChartProps) {
+  const gradientId = useId().replace(/:/g, "")
+  const theme = getAreaChartTheme(tone)
+
   const geometry = useMemo(() => {
     if (data.length === 0) {
       return null
@@ -48,19 +55,37 @@ function AreaChartComponent({
     )
   }
 
+  const chartHeightClass =
+    height >= 176 ? "h-44" : height >= 160 ? "h-40" : "h-36"
+  const showDots = data.length <= 24
+
   return (
     <div className={cn("w-full", className)} role="img" aria-label="Area chart">
       <svg
         viewBox={`0 0 ${geometry.width} ${height}`}
-        className="h-40 w-full text-primary"
+        className={cn(chartHeightClass, "w-full")}
         preserveAspectRatio="none"
       >
         <defs>
-          <linearGradient id="analyticsAreaFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--brand)" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="var(--brand)" stopOpacity="0.02" />
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={theme.fillTop} stopOpacity="0.32" />
+            <stop
+              offset="65%"
+              stopColor={theme.fillBottom}
+              stopOpacity="0.08"
+            />
+            <stop offset="100%" stopColor={theme.fillBottom} stopOpacity="0" />
           </linearGradient>
         </defs>
+        <line
+          x1={0}
+          x2={geometry.width}
+          y1={height - 1}
+          y2={height - 1}
+          className="stroke-border/80"
+          strokeWidth={0.75}
+          vectorEffect="non-scaling-stroke"
+        />
         {[0.25, 0.5, 0.75].map((ratio) => (
           <line
             key={ratio}
@@ -68,34 +93,40 @@ function AreaChartComponent({
             x2={geometry.width}
             y1={height * ratio}
             y2={height * ratio}
-            className="stroke-border"
+            className="stroke-border/50"
+            strokeDasharray="4 6"
             strokeWidth={0.5}
             vectorEffect="non-scaling-stroke"
           />
         ))}
-        <polygon points={geometry.area} fill="url(#analyticsAreaFill)" />
+        <polygon points={geometry.area} fill={`url(#${gradientId})`} />
         <polyline
           points={geometry.line}
           fill="none"
-          stroke="var(--brand)"
+          stroke={theme.line}
           strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
           vectorEffect="non-scaling-stroke"
         />
-        {geometry.points.map(({ x, y, point }) => (
-          <circle
-            key={point.label}
-            cx={x}
-            cy={y}
-            r={2.5}
-            className="fill-[var(--brand)]"
-          >
-            <title>
-              {point.title ?? `${point.label}: ${formatValue(point.value)}`}
-            </title>
-          </circle>
-        ))}
+        {showDots
+          ? geometry.points.map(({ x, y, point }) => (
+              <circle
+                key={point.label}
+                cx={x}
+                cy={y}
+                r={3}
+                fill={theme.dotStroke}
+                vectorEffect="non-scaling-stroke"
+              >
+                <title>
+                  {point.title ?? `${point.label}: ${formatValue(point.value)}`}
+                </title>
+              </circle>
+            ))
+          : null}
       </svg>
-      <div className="mt-2 flex justify-between gap-1 text-[10px] text-muted-foreground">
+      <div className="mt-3 flex justify-between gap-1 text-[11px] text-muted-foreground">
         {data.map((point) => (
           <span
             key={point.label}

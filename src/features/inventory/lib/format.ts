@@ -1,7 +1,4 @@
-const moneyFormat = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-})
+import { formatMoney as formatTkMoney } from "@/lib/format"
 
 const countFormat = new Intl.NumberFormat("en-US")
 
@@ -12,7 +9,7 @@ const dateFormat = new Intl.DateTimeFormat("en", {
 })
 
 export function formatMoney(value: number) {
-  return moneyFormat.format(value)
+  return formatTkMoney(value)
 }
 
 export function formatCount(value: number) {
@@ -29,10 +26,10 @@ export function formatPriceRange(min: number | null, max: number | null) {
   }
 
   if (min === max) {
-    return moneyFormat.format(min)
+    return formatMoney(min)
   }
 
-  return `${moneyFormat.format(min)} – ${moneyFormat.format(max)}`
+  return `${formatMoney(min)} – ${formatMoney(max)}`
 }
 
 export function hasDiscount(price: number, currentPrice: number) {

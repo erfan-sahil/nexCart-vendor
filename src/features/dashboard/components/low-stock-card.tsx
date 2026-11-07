@@ -1,5 +1,5 @@
-import { Link } from "react-router"
-
+import { PanelActionLink } from "./panel-action-link"
+import { dashboardPanelClass } from "../lib/dashboard-surface"
 import type { VendorDashboardOverview } from "../types"
 
 type LowStockCardProps = {
@@ -9,7 +9,7 @@ type LowStockCardProps = {
 
 export function LowStockCard({ lowStock, lowStockCount }: LowStockCardProps) {
   return (
-    <article className="rounded-xl border border-border bg-card p-4 text-card-foreground shadow-sm sm:p-5 xl:col-span-2">
+    <article className={`p-4 sm:p-6 xl:col-span-2 ${dashboardPanelClass}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold">Low stock</h2>
@@ -18,12 +18,9 @@ export function LowStockCard({ lowStock, lowStockCount }: LowStockCardProps) {
           </p>
         </div>
         {lowStockCount > lowStock.length ? (
-          <Link
-            to="/store/inventory?stockLevel=low_stock"
-            className="shrink-0 text-xs font-medium text-brand-text hover:underline"
-          >
+          <PanelActionLink to="/store/inventory?stockLevel=low_stock">
             View all ({lowStockCount})
-          </Link>
+          </PanelActionLink>
         ) : null}
       </div>
       {lowStock.length === 0 ? (

@@ -135,7 +135,9 @@ export type CreateVariantPayload = {
   }[]
 }
 
-export type UpdateVariantPayload = Omit<CreateVariantPayload, "simple">
+export type UpdateVariantPayload = Omit<CreateVariantPayload, "simple"> & {
+  status?: "active" | "archived"
+}
 
 export async function createVariant(
   productId: string,
@@ -145,6 +147,21 @@ export async function createVariant(
     const { data } = await api.post<ApiSuccess<{ id: string }>>(
       `/products/${productId}/variants`,
       payload
+    )
+
+    return data.data
+  } catch (error) {
+    throw toApiError(error)
+  }
+}
+
+export async function getProductVariant(
+  productId: string,
+  variantId: string
+): Promise<ProductVariant> {
+  try {
+    const { data } = await api.get<ApiSuccess<ProductVariant>>(
+      `/products/${productId}/variants/${variantId}`
     )
 
     return data.data

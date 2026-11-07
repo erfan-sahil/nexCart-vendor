@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
 import { useCategoryTree } from "@/features/products/hooks"
 import { ApiError } from "@/lib/api/errors"
+import { notifyError, notifySuccess } from "@/lib/notify"
 
 import { useUpdateStore } from "../hooks"
 import { storeCategoryOptions } from "../lib/categories"
@@ -134,6 +135,7 @@ export function StoreProfileForm({ store }: StoreProfileFormProps) {
       resetForm(saved)
       setEditing(false)
       setNotice("Store updated")
+      notifySuccess("Store updated")
     } catch (error) {
       const apiError =
         error instanceof ApiError
@@ -156,6 +158,8 @@ export function StoreProfileForm({ store }: StoreProfileFormProps) {
       if (mapped.message) {
         form.setError("root", { message: mapped.message })
       }
+
+      notifyError(error, mapped.message ?? apiError.message)
     }
   }
 

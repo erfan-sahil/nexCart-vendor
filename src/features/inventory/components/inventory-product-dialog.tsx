@@ -20,20 +20,17 @@ import {
   type LucideIcon,
 } from "lucide-react"
 
-import {
-  StatusBadge,
-  type StatusBadgeTone,
-} from "@/components/shared/status-badge"
+import { CustomBadge, type BadgeColor } from "@/components/shared"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { resolveAssetUrl } from "@/lib/api/assets"
 import { cn } from "@/lib/utils"
 
@@ -60,6 +57,7 @@ import type {
   StockLevel,
 } from "../types"
 
+import { InventoryVariantActions } from "./inventory-variant-actions"
 import { InventoryPagination } from "./inventory-states"
 import { StockLevelBadge } from "./stock-level-badge"
 
@@ -67,20 +65,20 @@ const DETAIL_PAGE_SIZE = 20
 
 const STATUS_BADGE: Record<
   CatalogStatus,
-  { icon: LucideIcon; tone: StatusBadgeTone }
+  { icon: LucideIcon; color: BadgeColor }
 > = {
-  active: { icon: CircleCheck, tone: "success" },
-  archived: { icon: Archive, tone: "neutral" },
+  active: { icon: CircleCheck, color: "success" },
+  archived: { icon: Archive, color: "neutral" },
 }
 
 const APPROVAL_BADGE: Record<
   ProductApprovalStatus,
-  { icon: LucideIcon; tone: StatusBadgeTone }
+  { icon: LucideIcon; color: BadgeColor }
 > = {
-  pending: { icon: Clock, tone: "warning" },
-  submitted: { icon: Send, tone: "warning" },
-  approved: { icon: BadgeCheck, tone: "success" },
-  rejected: { icon: CircleX, tone: "danger" },
+  pending: { icon: Clock, color: "warning" },
+  submitted: { icon: Send, color: "warning" },
+  approved: { icon: BadgeCheck, color: "success" },
+  rejected: { icon: CircleX, color: "danger" },
 }
 
 const STOCK_TONE: Record<StockLevel, string> = {
@@ -103,12 +101,16 @@ type InventoryProductDialogProps = {
   productId: string | null
   lowStockAt: number
   onClose: () => void
+  onVariantDetails: (variant: InventoryVariant) => void
+  onVariantUpdate: (variant: InventoryVariant) => void
 }
 
 export function InventoryProductDialog({
   productId,
   lowStockAt,
   onClose,
+  onVariantDetails,
+  onVariantUpdate,
 }: InventoryProductDialogProps) {
   if (!productId) {
     return null
@@ -120,6 +122,8 @@ export function InventoryProductDialog({
       productId={productId}
       lowStockAt={lowStockAt}
       onClose={onClose}
+      onVariantDetails={onVariantDetails}
+      onVariantUpdate={onVariantUpdate}
     />
   )
 }
@@ -128,10 +132,14 @@ function InventoryProductDetail({
   productId,
   lowStockAt,
   onClose,
+  onVariantDetails,
+  onVariantUpdate,
 }: {
   productId: string
   lowStockAt: number
   onClose: () => void
+  onVariantDetails: (variant: InventoryVariant) => void
+  onVariantUpdate: (variant: InventoryVariant) => void
 }) {
   const navigate = useNavigate()
   const [page, setPage] = useState(1)
@@ -145,8 +153,11 @@ function InventoryProductDetail({
 
   return (
     <Dialog open onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="flex h-[min(46rem,calc(100dvh-2rem))] max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
-        <DialogHeader className="shrink-0 border-b border-border px-5 py-4 pr-12 text-left">
+      <DialogContent
+        shell
+        className="h-[min(46rem,calc(100dvh-2rem))] sm:max-w-3xl"
+      >
+        <DialogHeader>
           {product ? (
             <ProductHeader product={product} />
           ) : (
@@ -159,91 +170,87 @@ function InventoryProductDetail({
           )}
         </DialogHeader>
 
-        <ScrollArea type="auto" className="min-h-0 flex-1">
-          <div className="flex flex-col gap-6 px-5 py-5">
-            {detail.isPending && !product ? <DetailSkeleton /> : null}
+        <DialogBody className="flex flex-col gap-6">
+          {detail.isPending && !product ? <DetailSkeleton /> : null}
 
-            {detail.isError && !product ? (
-              <div role="alert" className="py-10 text-center">
-                <p className="text-sm font-medium">
-                  Could not load this product
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="mt-4"
-                  onClick={() => {
-                    void detail.refetch()
-                  }}
-                >
-                  Try again
-                </Button>
-              </div>
-            ) : null}
+          {detail.isError && !product ? (
+            <div role="alert" className="py-10 text-center">
+              <p className="text-sm font-medium">Could not load this product</p>
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-4"
+                onClick={() => {
+                  void detail.refetch()
+                }}
+              >
+                Try again
+              </Button>
+            </div>
+          ) : null}
 
-            {product ? (
-              <>
-                <ProductMetrics product={product} />
-                <StockMix product={product} />
-                <Section
-                  title="Variants"
-                  meta={`${formatCount(detail.data?.pagination.total ?? product.variantCount)} total`}
-                >
-                  <VariantRows
-                    variants={detail.data?.variants ?? []}
-                    isRefreshing={detail.isFetching && !detail.isPending}
+          {product ? (
+            <>
+              <ProductMetrics product={product} />
+              <StockMix product={product} />
+              <Section
+                title="Variants"
+                meta={`${formatCount(detail.data?.pagination.total ?? product.variantCount)} total`}
+              >
+                <VariantRows
+                  variants={detail.data?.variants ?? []}
+                  isRefreshing={detail.isFetching && !detail.isPending}
+                  onDetails={onVariantDetails}
+                  onUpdate={onVariantUpdate}
+                />
+                {detail.data ? (
+                  <InventoryPagination
+                    page={detail.data.pagination.page}
+                    totalPages={detail.data.pagination.totalPages}
+                    total={detail.data.pagination.total}
+                    limit={detail.data.pagination.limit}
+                    disabled={detail.isFetching}
+                    onPage={setPage}
                   />
-                  {detail.data ? (
-                    <InventoryPagination
-                      page={detail.data.pagination.page}
-                      totalPages={detail.data.pagination.totalPages}
-                      total={detail.data.pagination.total}
-                      limit={detail.data.pagination.limit}
-                      disabled={detail.isFetching}
-                      onPage={setPage}
-                    />
-                  ) : null}
-                </Section>
-                <Section title="Record">
-                  <FactList
-                    items={[
-                      {
-                        label: "Default SKU",
-                        value: product.defaultSku || "—",
-                      },
-                      {
-                        label: "Category",
-                        value: product.category.name || "Uncategorized",
-                      },
-                      { label: "Store", value: product.store.name || "—" },
-                      { label: "Slug", value: product.slug },
-                      {
-                        label: "Catalog",
-                        value: PRODUCT_STATUS_LABEL[product.status],
-                      },
-                      {
-                        label: "Approval",
-                        value: PRODUCT_APPROVAL_LABEL[product.approvalStatus],
-                      },
-                      {
-                        label: "Visibility",
-                        value: product.isPublished
-                          ? "Published"
-                          : "Unpublished",
-                      },
-                      {
-                        label: "Updated",
-                        value: formatInventoryDate(product.updatedAt),
-                      },
-                    ]}
-                  />
-                </Section>
-              </>
-            ) : null}
-          </div>
-        </ScrollArea>
+                ) : null}
+              </Section>
+              <Section title="Record">
+                <FactList
+                  items={[
+                    {
+                      label: "Default SKU",
+                      value: product.defaultSku || "—",
+                    },
+                    {
+                      label: "Category",
+                      value: product.category.name || "Uncategorized",
+                    },
+                    { label: "Store", value: product.store.name || "—" },
+                    { label: "Slug", value: product.slug },
+                    {
+                      label: "Catalog",
+                      value: PRODUCT_STATUS_LABEL[product.status],
+                    },
+                    {
+                      label: "Approval",
+                      value: PRODUCT_APPROVAL_LABEL[product.approvalStatus],
+                    },
+                    {
+                      label: "Visibility",
+                      value: product.isPublished ? "Published" : "Unpublished",
+                    },
+                    {
+                      label: "Updated",
+                      value: formatInventoryDate(product.updatedAt),
+                    },
+                  ]}
+                />
+              </Section>
+            </>
+          ) : null}
+        </DialogBody>
 
-        <DialogFooter className="mx-0 mb-0 shrink-0 rounded-none border-border bg-card px-5 py-3">
+        <DialogFooter>
           <Button type="button" variant="outline" onClick={onClose}>
             Close
           </Button>
@@ -280,18 +287,21 @@ function ProductHeader({ product }: { product: InventoryProduct }) {
         </DialogDescription>
         <div className="mt-3 flex flex-wrap gap-1.5">
           <StockLevelBadge level={product.stockLevel} />
-          <StatusBadge icon={status.icon} tone={status.tone}>
-            {PRODUCT_STATUS_LABEL[product.status]}
-          </StatusBadge>
-          <StatusBadge icon={approval.icon} tone={approval.tone}>
-            {PRODUCT_APPROVAL_LABEL[product.approvalStatus]}
-          </StatusBadge>
-          <StatusBadge
+          <CustomBadge
+            name={PRODUCT_STATUS_LABEL[product.status]}
+            color={status.color}
+            icon={status.icon}
+          />
+          <CustomBadge
+            name={PRODUCT_APPROVAL_LABEL[product.approvalStatus]}
+            color={approval.color}
+            icon={approval.icon}
+          />
+          <CustomBadge
+            name={product.isPublished ? "Published" : "Unpublished"}
+            color={product.isPublished ? "brand" : "neutral"}
             icon={product.isPublished ? Eye : EyeOff}
-            tone={product.isPublished ? "brand" : "neutral"}
-          >
-            {product.isPublished ? "Published" : "Unpublished"}
-          </StatusBadge>
+          />
         </div>
       </div>
     </div>
@@ -448,9 +458,13 @@ function MixStat({
 function VariantRows({
   variants,
   isRefreshing,
+  onDetails,
+  onUpdate,
 }: {
   variants: InventoryVariant[]
   isRefreshing: boolean
+  onDetails: (variant: InventoryVariant) => void
+  onUpdate: (variant: InventoryVariant) => void
 }) {
   if (variants.length === 0) {
     return (
@@ -468,11 +482,12 @@ function VariantRows({
       )}
       aria-busy={isRefreshing}
     >
-      <div className="hidden grid-cols-[minmax(0,1.5fr)_7rem_5.5rem_auto] gap-3 border-b border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground sm:grid">
+      <div className="hidden grid-cols-[minmax(0,1.5fr)_7rem_5.5rem_auto_2.5rem] gap-3 border-b border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground sm:grid">
         <span>Variant</span>
         <span>Price</span>
         <span>Stock</span>
         <span>Level</span>
+        <span className="sr-only">Actions</span>
       </div>
       <ul>
         {variants.map((variant) => (
@@ -480,7 +495,11 @@ function VariantRows({
             key={variant.id}
             className="border-b border-border px-3 py-3 last:border-b-0"
           >
-            <VariantRow variant={variant} />
+            <VariantRow
+              variant={variant}
+              onDetails={onDetails}
+              onUpdate={onUpdate}
+            />
           </li>
         ))}
       </ul>
@@ -488,21 +507,27 @@ function VariantRows({
   )
 }
 
-function VariantRow({ variant }: { variant: InventoryVariant }) {
+function VariantRow({
+  variant,
+  onDetails,
+  onUpdate,
+}: {
+  variant: InventoryVariant
+  onDetails: (variant: InventoryVariant) => void
+  onUpdate: (variant: InventoryVariant) => void
+}) {
   const discounted = hasDiscount(variant.price, variant.currentPrice)
   const status = STATUS_BADGE[variant.status]
 
   return (
-    <div className="grid gap-3 sm:grid-cols-[minmax(0,1.5fr)_7rem_5.5rem_auto] sm:items-center">
+    <div className="grid gap-3 sm:grid-cols-[minmax(0,1.5fr)_7rem_5.5rem_auto_2.5rem] sm:items-center">
       <div className="min-w-0">
         <div className="flex min-w-0 items-center gap-2">
           <p className="truncate text-sm font-medium">
             {formatOptionLabel(variant.options)}
           </p>
           {variant.isDefault ? (
-            <StatusBadge icon={Star} tone="brand">
-              Default
-            </StatusBadge>
+            <CustomBadge name="Default" color="brand" icon={Star} />
           ) : null}
         </div>
         <p className="mt-0.5 truncate text-xs text-muted-foreground">
@@ -530,10 +555,19 @@ function VariantRow({ variant }: { variant: InventoryVariant }) {
       <div className="flex flex-wrap gap-1.5">
         <StockLevelBadge level={variant.stockLevel} />
         {variant.status === "archived" ? (
-          <StatusBadge icon={status.icon} tone={status.tone}>
-            {PRODUCT_STATUS_LABEL[variant.status]}
-          </StatusBadge>
+          <CustomBadge
+            name={PRODUCT_STATUS_LABEL[variant.status]}
+            color={status.color}
+            icon={status.icon}
+          />
         ) : null}
+      </div>
+      <div className="justify-self-end">
+        <InventoryVariantActions
+          variant={variant}
+          onDetails={onDetails}
+          onUpdate={onUpdate}
+        />
       </div>
     </div>
   )

@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { TableSkeletonHeader } from "@/components/ui/table"
 import { ApiError } from "@/lib/api/errors"
 
 import { formatListRange, formatTransactionRange } from "../lib/format"
@@ -23,18 +24,21 @@ export function FinanceSummarySkeleton() {
 
 export function FinanceTableSkeleton() {
   return (
-    <div className="divide-y divide-border" aria-hidden="true">
-      {Array.from({ length: 6 }, (_, index) => (
-        <div key={index} className="flex items-center gap-4 px-4 py-4">
-          <div className="size-9 shrink-0 animate-pulse rounded-lg bg-muted" />
-          <div className="min-w-0 flex-1 space-y-2">
-            <div className="h-3.5 w-36 max-w-full animate-pulse rounded bg-muted" />
-            <div className="h-3 w-24 animate-pulse rounded bg-muted" />
+    <div aria-hidden="true">
+      <TableSkeletonHeader columns={5} />
+      <div className="divide-y divide-border">
+        {Array.from({ length: 6 }, (_, index) => (
+          <div key={index} className="flex items-center gap-4 px-4 py-4">
+            <div className="size-9 shrink-0 animate-pulse rounded-lg bg-muted" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="h-3.5 w-36 max-w-full animate-pulse rounded bg-muted" />
+              <div className="h-3 w-24 animate-pulse rounded bg-muted" />
+            </div>
+            <div className="hidden h-3 w-28 animate-pulse rounded bg-muted lg:block" />
+            <div className="h-3 w-16 animate-pulse rounded bg-muted" />
           </div>
-          <div className="hidden h-3 w-28 animate-pulse rounded bg-muted lg:block" />
-          <div className="h-3 w-16 animate-pulse rounded bg-muted" />
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   )
 }

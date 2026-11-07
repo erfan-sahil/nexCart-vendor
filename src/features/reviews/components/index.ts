@@ -1,3 +1,4 @@
+export { ReviewDetailsDialog } from "./review-details-dialog"
 export { ReviewReplyDialog } from "./review-reply-dialog"
 export { ReviewStars } from "./review-stars"
 export { ReviewTable } from "./review-table"

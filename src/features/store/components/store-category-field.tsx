@@ -6,7 +6,6 @@ import {
 } from "@/components/ui/field"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
-import { MAX_STORE_CATEGORIES } from "../constants"
 import type { StoreCategoryOption } from "../lib/categories"
 
 type StoreCategoryFieldProps = {
@@ -41,10 +40,6 @@ export function StoreCategoryField({
       return
     }
 
-    if (value.length >= MAX_STORE_CATEGORIES) {
-      return
-    }
-
     onChange([...value, id])
   }
 
@@ -66,7 +61,6 @@ export function StoreCategoryField({
           <ul className="flex flex-col">
             {options.map((option) => {
               const checked = selected.has(option.id)
-              const atLimit = !checked && value.length >= MAX_STORE_CATEGORIES
 
               return (
                 <li key={option.id}>
@@ -75,7 +69,7 @@ export function StoreCategoryField({
                       type="checkbox"
                       className="size-4 accent-primary"
                       checked={checked}
-                      disabled={disabled || atLimit}
+                      disabled={disabled}
                       onChange={() => toggle(option.id)}
                     />
                     <span>{option.label}</span>
@@ -87,7 +81,7 @@ export function StoreCategoryField({
         </div>
       </ScrollArea>
       <FieldDescription>
-        Choose the categories this store sells in. Up to {MAX_STORE_CATEGORIES}.
+        Choose the categories this store sells in.
       </FieldDescription>
       <FieldError>{message}</FieldError>
     </Field>
