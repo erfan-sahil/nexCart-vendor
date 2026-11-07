@@ -3,15 +3,52 @@ const compactMoney = new Intl.NumberFormat("en", {
   maximumFractionDigits: 1,
 })
 
+export const CURRENCY_SUFFIX = "Tk"
+
+type MoneyFractionDigits = {
+  minimumFractionDigits?: number
+  maximumFractionDigits?: number
+}
+
+function formatAmount(
+  amount: number,
+  {
+    minimumFractionDigits = 0,
+    maximumFractionDigits = 2,
+  }: MoneyFractionDigits = {}
+) {
+  const value = amount.toLocaleString(undefined, {
+    minimumFractionDigits,
+    maximumFractionDigits,
+  })
+
+  return `${value} ${CURRENCY_SUFFIX}`
+}
+
 export function formatMoney(amount: number) {
-  return `৳${amount.toLocaleString(undefined, {
-    minimumFractionDigits: 0,
+  return formatAmount(amount)
+}
+
+/** BDT wallet / payout amounts — always show two decimal places. */
+export function formatBdt(amount: number) {
+  return formatAmount(amount, {
+    minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  })}`
+  })
 }
 
 export function formatCompactMoney(amount: number) {
-  return `৳${compactMoney.format(amount)}`
+  return `${compactMoney.format(amount)} ${CURRENCY_SUFFIX}`
+}
+
+export function formatSignedMoney(amount: number, credit: boolean) {
+  const prefix = credit ? "+" : "−"
+  return `${prefix}${formatMoney(amount)}`
+}
+
+export function formatSignedBdt(amount: number, credit: boolean) {
+  const prefix = credit ? "+" : "−"
+  return `${prefix}${formatBdt(amount)}`
 }
 
 export function formatPercent(value: number, fractionDigits = 1) {

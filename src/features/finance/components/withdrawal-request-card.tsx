@@ -114,11 +114,6 @@ export function WithdrawalRequestCard({
                   formError && "border-destructive ring-3 ring-destructive/20"
                 )}
               >
-                <InputGroupAddon>
-                  <InputGroupText className="font-medium text-foreground">
-                    ৳
-                  </InputGroupText>
-                </InputGroupAddon>
                 <InputGroupInput
                   id="withdrawal-amount"
                   type="number"
@@ -133,6 +128,9 @@ export function WithdrawalRequestCard({
                   onChange={(event) => onAmountChange(event.target.value)}
                 />
                 <InputGroupAddon align="inline-end">
+                  <InputGroupText className="font-medium text-foreground">
+                    Tk
+                  </InputGroupText>
                   <InputGroupButton
                     type="button"
                     variant="ghost"
@@ -167,7 +165,7 @@ export function WithdrawalRequestCard({
               </Button>
             </div>
             <FieldDescription>
-              Enter an amount up to {formatBdt(available)}. Currency is BDT.
+              Enter an amount up to {formatBdt(available)}. Amounts are in Tk.
             </FieldDescription>
             {formError ? <FieldError>{formError}</FieldError> : null}
           </Field>

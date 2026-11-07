@@ -1,3 +1,5 @@
+export { formatBdt, formatSignedBdt } from "@/lib/format"
+
 const dateFormat = new Intl.DateTimeFormat("en", {
   month: "short",
   day: "numeric",
@@ -16,18 +18,6 @@ const timeFormat = new Intl.DateTimeFormat("en", {
   hour: "numeric",
   minute: "2-digit",
 })
-
-export function formatBdt(amount: number) {
-  return `৳${amount.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`
-}
-
-export function formatSignedBdt(amount: number, credit: boolean) {
-  const prefix = credit ? "+" : "−"
-  return `${prefix}${formatBdt(amount)}`
-}
 
 export function formatFinanceDate(value: string) {
   const date = new Date(value)
