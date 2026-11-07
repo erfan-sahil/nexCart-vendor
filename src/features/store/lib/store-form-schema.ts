@@ -44,10 +44,7 @@ export const storeProfileSchema = z
     state: z.string().trim().min(2, "Enter the state").max(80),
     postalCode: z.string().trim().min(2, "Enter the postal code").max(20),
     country: z.string().trim().min(2, "Enter the country").max(80),
-    categoryIds: z
-      .array(objectId)
-      .min(1, "Select at least one category")
-      .max(20, "Select up to 20 categories"),
+    categoryIds: z.array(objectId).min(1, "Select at least one category"),
     returnPolicy: z.string().trim().max(2000),
     shippingPolicy: z.string().trim().max(2000),
     isActive: z.boolean(),
