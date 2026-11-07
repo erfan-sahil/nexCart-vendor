@@ -13,6 +13,7 @@ import {
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Textarea } from "@/components/ui/textarea"
 import { ApiError } from "@/lib/api/errors"
+import { notifyError, notifySuccess } from "@/lib/notify"
 
 import { useCreateStoreReviewReplyMutation } from "../hooks"
 import { formatReviewDateTime } from "../lib/format"
@@ -63,13 +64,16 @@ export function ReviewReplyDialog({
         reviewId: review.id,
         body: trimmed,
       })
+      notifySuccess("Reply posted")
       resetAndClose()
     } catch (err) {
-      setError(
+      const message =
         err instanceof ApiError
           ? err.message
           : "Could not post your reply. Try again."
-      )
+
+      setError(message)
+      notifyError(err, message)
     }
   }
 

@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "react-router"
 
 import { ApiError } from "@/lib/api/errors"
+import { notifyError, notifySuccess } from "@/lib/notify"
 
 import { login, logout, sessionQueryKey } from "../services"
 import { useAuthStore } from "../store"
@@ -39,6 +40,12 @@ export function useLogout() {
 
   return useMutation({
     mutationFn: logout,
+    onSuccess: () => {
+      notifySuccess("Signed out")
+    },
+    onError: (err) => {
+      notifyError(err, "Could not sign out. Please try again.")
+    },
     onSettled: () => {
       useAuthStore.getState().clearSession()
       queryClient.setQueryData(sessionQueryKey, null)

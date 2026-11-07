@@ -9,6 +9,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { ApiError } from "@/lib/api/errors"
+import { notifyError, notifySuccess } from "@/lib/notify"
 import { resolveAssetUrl } from "@/lib/api/assets"
 
 import { uploadBusinessDocument } from "../services"
@@ -76,12 +77,15 @@ export function BusinessDocumentField({
 
     try {
       onChange(await uploadBusinessDocument(file))
+      notifySuccess("Document uploaded")
     } catch (uploadError) {
-      setLocalError(
+      const message =
         uploadError instanceof ApiError
           ? uploadError.message
           : "Could not upload that file. Try again."
-      )
+
+      setLocalError(message)
+      notifyError(uploadError, message)
     } finally {
       setUploading(false)
     }

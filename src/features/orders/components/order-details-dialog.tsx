@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { ApiError } from "@/lib/api/errors"
+import { notifyError, notifySuccess } from "@/lib/notify"
 import { cn } from "@/lib/utils"
 
 import { vendorOrderStatusLabel } from "../lib/normalize-order-status"
@@ -143,12 +144,19 @@ function OrderDetailsBody({
     vendorReturnShipments
   )
 
-  const run = async (fn: () => Promise<unknown>) => {
+  const run = async (
+    fn: () => Promise<unknown>,
+    successMessage = "Order updated"
+  ) => {
     setError(null)
     try {
       await fn()
+      notifySuccess(successMessage)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Action failed.")
+      const message = err instanceof ApiError ? err.message : "Action failed."
+
+      setError(message)
+      notifyError(err, message)
     }
   }
 
@@ -163,7 +171,10 @@ function OrderDetailsBody({
           className="cursor-pointer"
           disabled={busy}
           onClick={() =>
-            run(() => confirmVendorReturn.mutateAsync(shipment.id))
+            run(
+              () => confirmVendorReturn.mutateAsync(shipment.id),
+              "Return shipment confirmed"
+            )
           }
         >
           Confirm returned products received

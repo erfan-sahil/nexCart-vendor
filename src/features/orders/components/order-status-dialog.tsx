@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { ApiError } from "@/lib/api/errors"
+import { notifyError, notifySuccess } from "@/lib/notify"
 
 import { vendorOrderStatusLabel } from "../lib/normalize-order-status"
 import { useVendorOrderActions } from "../hooks/use-vendor-orders"
@@ -82,11 +83,14 @@ function OrderStatusForm({
         vendorOrderId: order.id,
         status: selected.status,
       })
+      notifySuccess("Order status updated")
       onClose()
     } catch (err) {
-      setError(
+      const message =
         err instanceof ApiError ? err.message : "Could not update order status."
-      )
+
+      setError(message)
+      notifyError(err, message)
     }
   }
 

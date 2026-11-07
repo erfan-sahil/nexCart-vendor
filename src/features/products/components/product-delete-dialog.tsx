@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { ApiError } from "@/lib/api/errors"
+import { notifyError, notifySuccess } from "@/lib/notify"
 import { resolveAssetUrl } from "@/lib/api/assets"
 
 import { useDeleteProduct } from "../hooks"
@@ -54,13 +55,16 @@ function ProductDeleteConfirm({
 
     try {
       await remove.mutateAsync(product.id)
+      notifySuccess("Product deleted")
       onClose()
     } catch (caught) {
-      setError(
+      const message =
         caught instanceof ApiError
           ? caught.message
           : "Could not delete this product. Please try again."
-      )
+
+      setError(message)
+      notifyError(caught, message)
     }
   }
 

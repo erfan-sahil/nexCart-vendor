@@ -19,6 +19,7 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { ApiError } from "@/lib/api/errors"
+import { notifyError, notifySuccess } from "@/lib/notify"
 import { cn } from "@/lib/utils"
 
 import { useUpdateBusinessRecords } from "../hooks"
@@ -221,6 +222,7 @@ export function BusinessProfileView({ application }: BusinessProfileViewProps) {
       form.reset(businessRecordsFromApplication(saved))
       setEditing(false)
       setNotice("Business records updated")
+      notifySuccess("Business records updated")
     } catch (error) {
       const apiError =
         error instanceof ApiError
@@ -241,6 +243,8 @@ export function BusinessProfileView({ application }: BusinessProfileViewProps) {
       if (mapped.message) {
         form.setError("root", { message: mapped.message })
       }
+
+      notifyError(error, mapped.message ?? apiError.message)
     }
   }
 
