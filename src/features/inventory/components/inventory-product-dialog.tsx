@@ -27,13 +27,13 @@ import {
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { resolveAssetUrl } from "@/lib/api/assets"
 import { cn } from "@/lib/utils"
 
@@ -145,8 +145,11 @@ function InventoryProductDetail({
 
   return (
     <Dialog open onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="flex h-[min(46rem,calc(100dvh-2rem))] max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
-        <DialogHeader className="shrink-0 border-b border-border px-5 py-4 pr-12 text-left">
+      <DialogContent
+        shell
+        className="h-[min(46rem,calc(100dvh-2rem))] sm:max-w-3xl"
+      >
+        <DialogHeader>
           {product ? (
             <ProductHeader product={product} />
           ) : (
@@ -159,91 +162,85 @@ function InventoryProductDetail({
           )}
         </DialogHeader>
 
-        <ScrollArea type="auto" className="min-h-0 flex-1">
-          <div className="flex flex-col gap-6 px-5 py-5">
-            {detail.isPending && !product ? <DetailSkeleton /> : null}
+        <DialogBody className="flex flex-col gap-6">
+          {detail.isPending && !product ? <DetailSkeleton /> : null}
 
-            {detail.isError && !product ? (
-              <div role="alert" className="py-10 text-center">
-                <p className="text-sm font-medium">
-                  Could not load this product
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="mt-4"
-                  onClick={() => {
-                    void detail.refetch()
-                  }}
-                >
-                  Try again
-                </Button>
-              </div>
-            ) : null}
+          {detail.isError && !product ? (
+            <div role="alert" className="py-10 text-center">
+              <p className="text-sm font-medium">Could not load this product</p>
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-4"
+                onClick={() => {
+                  void detail.refetch()
+                }}
+              >
+                Try again
+              </Button>
+            </div>
+          ) : null}
 
-            {product ? (
-              <>
-                <ProductMetrics product={product} />
-                <StockMix product={product} />
-                <Section
-                  title="Variants"
-                  meta={`${formatCount(detail.data?.pagination.total ?? product.variantCount)} total`}
-                >
-                  <VariantRows
-                    variants={detail.data?.variants ?? []}
-                    isRefreshing={detail.isFetching && !detail.isPending}
+          {product ? (
+            <>
+              <ProductMetrics product={product} />
+              <StockMix product={product} />
+              <Section
+                title="Variants"
+                meta={`${formatCount(detail.data?.pagination.total ?? product.variantCount)} total`}
+              >
+                <VariantRows
+                  variants={detail.data?.variants ?? []}
+                  isRefreshing={detail.isFetching && !detail.isPending}
+                />
+                {detail.data ? (
+                  <InventoryPagination
+                    page={detail.data.pagination.page}
+                    totalPages={detail.data.pagination.totalPages}
+                    total={detail.data.pagination.total}
+                    limit={detail.data.pagination.limit}
+                    disabled={detail.isFetching}
+                    onPage={setPage}
                   />
-                  {detail.data ? (
-                    <InventoryPagination
-                      page={detail.data.pagination.page}
-                      totalPages={detail.data.pagination.totalPages}
-                      total={detail.data.pagination.total}
-                      limit={detail.data.pagination.limit}
-                      disabled={detail.isFetching}
-                      onPage={setPage}
-                    />
-                  ) : null}
-                </Section>
-                <Section title="Record">
-                  <FactList
-                    items={[
-                      {
-                        label: "Default SKU",
-                        value: product.defaultSku || "—",
-                      },
-                      {
-                        label: "Category",
-                        value: product.category.name || "Uncategorized",
-                      },
-                      { label: "Store", value: product.store.name || "—" },
-                      { label: "Slug", value: product.slug },
-                      {
-                        label: "Catalog",
-                        value: PRODUCT_STATUS_LABEL[product.status],
-                      },
-                      {
-                        label: "Approval",
-                        value: PRODUCT_APPROVAL_LABEL[product.approvalStatus],
-                      },
-                      {
-                        label: "Visibility",
-                        value: product.isPublished
-                          ? "Published"
-                          : "Unpublished",
-                      },
-                      {
-                        label: "Updated",
-                        value: formatInventoryDate(product.updatedAt),
-                      },
-                    ]}
-                  />
-                </Section>
-              </>
-            ) : null}
-          </div>
-        </ScrollArea>
+                ) : null}
+              </Section>
+              <Section title="Record">
+                <FactList
+                  items={[
+                    {
+                      label: "Default SKU",
+                      value: product.defaultSku || "—",
+                    },
+                    {
+                      label: "Category",
+                      value: product.category.name || "Uncategorized",
+                    },
+                    { label: "Store", value: product.store.name || "—" },
+                    { label: "Slug", value: product.slug },
+                    {
+                      label: "Catalog",
+                      value: PRODUCT_STATUS_LABEL[product.status],
+                    },
+                    {
+                      label: "Approval",
+                      value: PRODUCT_APPROVAL_LABEL[product.approvalStatus],
+                    },
+                    {
+                      label: "Visibility",
+                      value: product.isPublished ? "Published" : "Unpublished",
+                    },
+                    {
+                      label: "Updated",
+                      value: formatInventoryDate(product.updatedAt),
+                    },
+                  ]}
+                />
+              </Section>
+            </>
+          ) : null}
+        </DialogBody>
 
-        <DialogFooter className="mx-0 mb-0 shrink-0 rounded-none border-border bg-card px-5 py-3">
+        <DialogFooter>
           <Button type="button" variant="outline" onClick={onClose}>
             Close
           </Button>

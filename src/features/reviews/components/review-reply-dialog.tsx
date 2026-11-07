@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -86,7 +87,7 @@ export function ReviewReplyDialog({
         }
       }}
     >
-      <DialogContent className="max-w-lg">
+      <DialogContent shell className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
             {alreadyReplied ? "Review thread" : "Reply to review"}
@@ -99,7 +100,7 @@ export function ReviewReplyDialog({
         </DialogHeader>
 
         {review ? (
-          <div className="space-y-4">
+          <DialogBody className="space-y-4">
             <div className="rounded-lg border border-border bg-muted/30 p-3">
               <div className="flex items-center gap-2">
                 <ReviewStars rating={review.rating} />
@@ -161,7 +162,7 @@ export function ReviewReplyDialog({
             ) : null}
 
             {error ? <p className="text-sm text-destructive">{error}</p> : null}
-          </div>
+          </DialogBody>
         ) : null}
 
         <DialogFooter>

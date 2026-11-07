@@ -5,13 +5,13 @@ import { StatusBadge } from "@/components/shared/status-badge"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { ScrollArea } from "@/components/ui/scroll-area"
 import { resolveAssetUrl } from "@/lib/api/assets"
 import { cn } from "@/lib/utils"
 
@@ -80,14 +80,15 @@ function ProductDetails({
 
   return (
     <Dialog open onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="flex h-[min(44rem,calc(100dvh-2rem))] max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
-        <DialogHeader className="shrink-0 border-b border-border px-5 py-4 pr-12 text-left">
+      <DialogContent
+        shell
+        className="h-[min(44rem,calc(100dvh-2rem))] sm:max-w-3xl"
+      >
+        <DialogHeader>
           <p className="text-xs font-medium text-brand-text">
             {product.category.name || "Uncategorized"}
           </p>
-          <DialogTitle className="mt-1 text-lg leading-snug font-semibold">
-            {product.name}
-          </DialogTitle>
+          <DialogTitle className="mt-1">{product.name}</DialogTitle>
           <DialogDescription className="sr-only">
             Product details for {product.name}
           </DialogDescription>
@@ -96,118 +97,116 @@ function ProductDetails({
           </div>
         </DialogHeader>
 
-        <ScrollArea type="auto" className="min-h-0 flex-1">
-          <div className="flex flex-col gap-6 px-5 py-5">
-            <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <Fact
-                label="Price"
-                value={formatPriceRange(product.offer)}
-                detail={originalPrice ? `Was ${originalPrice}` : undefined}
-              />
-              <Fact
-                label="Stock"
-                value={stock}
-                detail={
-                  hasVariants
-                    ? formatVariantCount(product.offer.variantCount)
-                    : "Add a variant to sell"
-                }
-              />
-              <Fact label="Rating" value={rating} detail={ratingDetail} />
-              <Fact
-                label="Store"
-                value={product.store.name || "—"}
-                detail={formatProductDate(product.updatedAt)}
-              />
-            </dl>
+        <DialogBody className="flex flex-col gap-6">
+          <dl className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <Fact
+              label="Price"
+              value={formatPriceRange(product.offer)}
+              detail={originalPrice ? `Was ${originalPrice}` : undefined}
+            />
+            <Fact
+              label="Stock"
+              value={stock}
+              detail={
+                hasVariants
+                  ? formatVariantCount(product.offer.variantCount)
+                  : "Add a variant to sell"
+              }
+            />
+            <Fact label="Rating" value={rating} detail={ratingDetail} />
+            <Fact
+              label="Store"
+              value={product.store.name || "—"}
+              detail={formatProductDate(product.updatedAt)}
+            />
+          </dl>
 
-            {product.reviewNote ? (
-              <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {product.reviewNote}
-              </p>
-            ) : null}
+          {product.reviewNote ? (
+            <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {product.reviewNote}
+            </p>
+          ) : null}
 
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-              <ProductGallery images={images} name={product.name} />
-              <Section title="Summary" className="min-w-0 flex-1">
-                <div className="rounded-lg border border-border px-3 py-3">
-                  <p className="text-sm leading-relaxed whitespace-pre-line text-foreground">
-                    {product.shortDescription || "No summary yet."}
-                  </p>
-                </div>
-              </Section>
-            </div>
-
-            <Section title="Specifications">
-              <FeatureList
-                features={
-                  (product.features ?? []).length > 0
-                    ? product.features
-                    : product.description
-                        .split("\n")
-                        .map((line) => line.trim())
-                        .filter(Boolean)
-                }
-              />
-            </Section>
-
-            {specs.length > 0 ? (
-              <Section title="Category details">
-                <FactList
-                  items={specs.map((attribute) => ({
-                    label: attributeLabel(attribute),
-                    value: attributeValue(attribute),
-                  }))}
-                />
-              </Section>
-            ) : null}
-
-            <Section
-              title="Variants"
-              meta={formatVariantCount(product.offer.variantCount)}
-            >
-              {hasVariants ? (
-                <VariantList productId={product.id} />
-              ) : (
-                <p className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
-                  Add a variant to sell this product.
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+            <ProductGallery images={images} name={product.name} />
+            <Section title="Summary" className="min-w-0 flex-1">
+              <div className="rounded-lg border border-border px-3 py-3">
+                <p className="text-sm leading-relaxed whitespace-pre-line text-foreground">
+                  {product.shortDescription || "No summary yet."}
                 </p>
-              )}
-            </Section>
-
-            {product.tags.length > 0 ? (
-              <Section title="Tags">
-                <div className="flex flex-wrap gap-1.5">
-                  {product.tags.map((tag) => (
-                    <ProductTagBadge key={tag} tag={tag} />
-                  ))}
-                </div>
-              </Section>
-            ) : null}
-
-            <Section title="Record">
-              <FactList
-                items={[
-                  { label: "Slug", value: product.slug },
-                  {
-                    label: "Category",
-                    value: product.category.name || "Uncategorized",
-                  },
-                  {
-                    label: "Created",
-                    value: formatProductDate(product.createdAt),
-                  },
-                  {
-                    label: "Updated",
-                    value: formatProductDate(product.updatedAt),
-                  },
-                ]}
-              />
+              </div>
             </Section>
           </div>
-        </ScrollArea>
 
-        <DialogFooter className="mx-0 mb-0 shrink-0 rounded-none border-border bg-card px-5 py-3">
+          <Section title="Specifications">
+            <FeatureList
+              features={
+                (product.features ?? []).length > 0
+                  ? product.features
+                  : product.description
+                      .split("\n")
+                      .map((line) => line.trim())
+                      .filter(Boolean)
+              }
+            />
+          </Section>
+
+          {specs.length > 0 ? (
+            <Section title="Category details">
+              <FactList
+                items={specs.map((attribute) => ({
+                  label: attributeLabel(attribute),
+                  value: attributeValue(attribute),
+                }))}
+              />
+            </Section>
+          ) : null}
+
+          <Section
+            title="Variants"
+            meta={formatVariantCount(product.offer.variantCount)}
+          >
+            {hasVariants ? (
+              <VariantList productId={product.id} />
+            ) : (
+              <p className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
+                Add a variant to sell this product.
+              </p>
+            )}
+          </Section>
+
+          {product.tags.length > 0 ? (
+            <Section title="Tags">
+              <div className="flex flex-wrap gap-1.5">
+                {product.tags.map((tag) => (
+                  <ProductTagBadge key={tag} tag={tag} />
+                ))}
+              </div>
+            </Section>
+          ) : null}
+
+          <Section title="Record">
+            <FactList
+              items={[
+                { label: "Slug", value: product.slug },
+                {
+                  label: "Category",
+                  value: product.category.name || "Uncategorized",
+                },
+                {
+                  label: "Created",
+                  value: formatProductDate(product.createdAt),
+                },
+                {
+                  label: "Updated",
+                  value: formatProductDate(product.updatedAt),
+                },
+              ]}
+            />
+          </Section>
+        </DialogBody>
+
+        <DialogFooter>
           <Button
             type="button"
             variant="outline"

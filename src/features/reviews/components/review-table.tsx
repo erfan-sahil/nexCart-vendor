@@ -57,15 +57,13 @@ export function ReviewTable({
   return (
     <div>
       <Table>
-        <TableHeader className="bg-muted/50">
-          <TableRow className="hover:bg-transparent">
-            <TableHead className="h-10 px-3 first:pl-4">Review</TableHead>
-            <TableHead className="h-10 px-3">Product</TableHead>
-            <TableHead className="h-10 px-3">Replies</TableHead>
-            <TableHead className="h-10 px-3">Date</TableHead>
-            <TableHead className="h-10 w-28 px-3 text-right last:pr-4">
-              Actions
-            </TableHead>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Review</TableHead>
+            <TableHead>Product</TableHead>
+            <TableHead>Replies</TableHead>
+            <TableHead>Date</TableHead>
+            <TableHead className="w-28 text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -108,7 +106,7 @@ export function ReviewTable({
             </TableRow>
           ) : (
             items.map((review) => (
-              <TableRow key={review.id} className="hover:bg-muted/40">
+              <TableRow key={review.id}>
                 <TableCell className="max-w-80 px-3 py-2.5 first:pl-4">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">

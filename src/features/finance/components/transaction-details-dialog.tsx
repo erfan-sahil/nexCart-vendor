@@ -2,6 +2,7 @@ import { ArrowDownLeft, ArrowUpRight } from "lucide-react"
 
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -42,13 +43,11 @@ export function TransactionDetailsDialog({
 
   return (
     <Dialog open onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="flex max-h-[calc(100dvh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
-        <DialogHeader className="shrink-0 border-b border-border px-5 py-4 pr-12 text-left">
+      <DialogContent shell className="sm:max-w-lg">
+        <DialogHeader>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 space-y-2">
-              <DialogTitle className="text-lg leading-snug font-semibold">
-                {ledgerTypeLabel(transaction.type)}
-              </DialogTitle>
+              <DialogTitle>{ledgerTypeLabel(transaction.type)}</DialogTitle>
               <DialogDescription className="text-pretty">
                 {ledgerTypeDescription(transaction.type, transaction.account)}
               </DialogDescription>
@@ -74,7 +73,7 @@ export function TransactionDetailsDialog({
           </p>
         </DialogHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+        <DialogBody className="py-4">
           <dl className="grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2">
             <Fact
               label="Date & time"
@@ -104,9 +103,9 @@ export function TransactionDetailsDialog({
               className="sm:col-span-2"
             />
           </dl>
-        </div>
+        </DialogBody>
 
-        <DialogFooter className="mx-0 mb-0 shrink-0 rounded-none border-t border-border bg-card px-5 py-3">
+        <DialogFooter>
           <Button
             type="button"
             variant="outline"

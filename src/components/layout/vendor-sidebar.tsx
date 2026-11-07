@@ -89,11 +89,12 @@ export function VendorSidebar({
           collapsed && "lg:justify-center lg:px-2"
         )}
       >
-        <BrandLogo className={cn("h-7", collapsed && "lg:hidden")} />
-        <BrandLogo
-          variant="mark"
-          className={cn("hidden", collapsed && "lg:block")}
-        />
+        <div className={cn("shrink-0", collapsed && "lg:hidden")}>
+          <BrandLogo tone="auto" className="h-7" />
+        </div>
+        <div className={cn("hidden shrink-0", collapsed && "lg:block")}>
+          <BrandLogo tone="auto" variant="mark" className="h-7" />
+        </div>
         <div className={cn("min-w-0 flex-1", collapsed && "lg:hidden")}>
           <p className="truncate text-xs text-sidebar-foreground/60">Vendor</p>
         </div>

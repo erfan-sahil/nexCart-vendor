@@ -3,6 +3,7 @@ import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -96,15 +97,15 @@ function OrderStatusForm({
 
   return (
     <Dialog open onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader className="text-left">
+      <DialogContent shell className="sm:max-w-md">
+        <DialogHeader>
           <DialogTitle>Update order status</DialogTitle>
           <DialogDescription>
             Choose the next step for {order.vendorOrderNumber}.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4">
+        <DialogBody scroll={false} className="flex flex-col gap-4">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm text-muted-foreground">Current</span>
             <OrderStatusBadge status={order.status} />
@@ -154,9 +155,9 @@ function OrderStatusForm({
               {error}
             </p>
           ) : null}
-        </div>
+        </DialogBody>
 
-        <DialogFooter className="mx-0 mb-0 border-border bg-card">
+        <DialogFooter>
           <Button
             type="button"
             variant="outline"

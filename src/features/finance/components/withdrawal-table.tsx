@@ -38,23 +38,13 @@ export function WithdrawalTable({
       <Table>
         <TableCaption className="sr-only">Withdrawal requests</TableCaption>
         <TableHeader>
-          <TableRow className="bg-muted/40 hover:bg-muted/40">
-            <TableHead className="h-11 pl-4 text-xs font-medium text-muted-foreground">
-              Request
-            </TableHead>
-            <TableHead className="h-11 text-xs font-medium text-muted-foreground">
-              Method
-            </TableHead>
-            <TableHead className="h-11 text-xs font-medium text-muted-foreground">
-              Status
-            </TableHead>
-            <TableHead className="hidden h-11 text-xs font-medium text-muted-foreground md:table-cell">
-              Reference
-            </TableHead>
-            <TableHead className="h-11 pr-4 text-right text-xs font-medium text-muted-foreground">
-              Amount
-            </TableHead>
-            <TableHead className="h-11 w-28 pr-4 text-end text-xs font-medium text-muted-foreground">
+          <TableRow>
+            <TableHead>Request</TableHead>
+            <TableHead>Method</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead className="hidden md:table-cell">Reference</TableHead>
+            <TableHead className="text-right">Amount</TableHead>
+            <TableHead className="w-28 text-end">
               <span className="sr-only">Actions</span>
             </TableHead>
           </TableRow>

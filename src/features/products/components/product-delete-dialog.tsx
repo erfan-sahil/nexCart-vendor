@@ -4,6 +4,7 @@ import { LoaderCircle, Package, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogBody,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -78,18 +79,17 @@ function ProductDeleteConfirm({
       }}
     >
       <DialogContent
-        className="gap-0 overflow-hidden p-0 sm:max-w-md"
+        shell
+        className="sm:max-w-md"
         showCloseButton={!remove.isPending}
       >
-        <DialogHeader className="border-b border-destructive/15 bg-destructive/10 px-6 py-6 text-left">
-          <div className="flex items-start gap-4 pr-8">
+        <DialogHeader variant="destructive" className="py-5">
+          <div className="flex items-start gap-4">
             <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-destructive/15 text-destructive ring-4 ring-background">
               <Trash2 className="size-5" />
             </span>
             <div className="min-w-0">
-              <DialogTitle className="text-lg font-semibold">
-                Delete this product?
-              </DialogTitle>
+              <DialogTitle>Delete this product?</DialogTitle>
               <DialogDescription className="mt-1 text-foreground/70">
                 This permanently removes the listing, its variants, and its
                 images. It cannot be undone.
@@ -98,7 +98,7 @@ function ProductDeleteConfirm({
           </div>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4 px-6 py-5">
+        <DialogBody scroll={false} className="flex flex-col gap-4">
           <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/40 p-3">
             <ProductThumb product={product} />
             <div className="min-w-0">
@@ -125,9 +125,9 @@ function ProductDeleteConfirm({
               {error}
             </p>
           ) : null}
-        </div>
+        </DialogBody>
 
-        <DialogFooter className="mx-0 mb-0 rounded-none border-border bg-card px-6 py-4">
+        <DialogFooter>
           <Button
             type="button"
             variant="outline"

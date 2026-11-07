@@ -37,7 +37,7 @@ export function WithdrawalCancelDialog({
         }
       }}
     >
-      <DialogContent className="sm:max-w-md">
+      <DialogContent shell className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Cancel withdrawal request?</DialogTitle>
           <DialogDescription>
@@ -46,7 +46,7 @@ export function WithdrawalCancelDialog({
               : "This will cancel your pending withdrawal and return funds to your available balance."}
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter className="gap-2 sm:gap-0">
+        <DialogFooter>
           <Button
             type="button"
             variant="outline"
