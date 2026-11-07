@@ -12,6 +12,11 @@ const dateTimeFormat = new Intl.DateTimeFormat("en", {
   minute: "2-digit",
 })
 
+const timeFormat = new Intl.DateTimeFormat("en", {
+  hour: "numeric",
+  minute: "2-digit",
+})
+
 export function formatBdt(amount: number) {
   return `৳${amount.toLocaleString(undefined, {
     minimumFractionDigits: 2,
@@ -42,6 +47,16 @@ export function formatFinanceDateTime(value: string) {
   }
 
   return dateTimeFormat.format(date)
+}
+
+export function formatFinanceTime(value: string) {
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return "—"
+  }
+
+  return timeFormat.format(date)
 }
 
 export function formatListRange(

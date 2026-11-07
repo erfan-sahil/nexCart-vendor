@@ -1,4 +1,10 @@
-import { ArrowDownLeft, ArrowUpRight } from "lucide-react"
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  CalendarClock,
+  Wallet,
+  type LucideIcon,
+} from "lucide-react"
 
 import {
   Dialog,
@@ -20,8 +26,8 @@ import {
   ledgerTypeLabel,
 } from "../constants"
 import {
-  formatBdt,
-  formatFinanceDateTime,
+  formatFinanceDate,
+  formatFinanceTime,
   formatSignedBdt,
 } from "../lib/format"
 import type { LedgerRow } from "../services/vendor-finance.api"
@@ -73,36 +79,48 @@ export function TransactionDetailsDialog({
           </p>
         </DialogHeader>
 
-        <DialogBody className="py-4">
-          <dl className="grid gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2">
-            <Fact
-              label="Date & time"
-              value={formatFinanceDateTime(transaction.createdAt)}
-            />
-            <Fact
+        <DialogBody className="flex flex-col gap-5">
+          <dl className="overflow-hidden rounded-xl border border-border">
+            <SummaryRow
+              icon={Wallet}
               label="Account"
               value={ledgerAccountLabel(transaction.account)}
+              detail={accountDetail(transaction.account)}
             />
-            <Fact label="Direction" value={credit ? "Credit" : "Debit"} />
-            <Fact label="Amount" value={formatBdt(transaction.amount)} />
-            <Fact
-              label="Entry type"
-              value={transaction.type.replace(/_/g, " ")}
-              className="sm:col-span-2"
+            <SummaryRow
+              icon={credit ? ArrowDownLeft : ArrowUpRight}
+              label="Direction"
+              value={credit ? "Credit" : "Debit"}
+              detail={credit ? "Adds to this account" : "Leaves this account"}
+              tone={credit ? "credit" : "debit"}
             />
-            <Fact
-              label="Transaction ID"
-              value={transaction.id}
-              mono
-              className="sm:col-span-2"
-            />
-            <Fact
-              label="Vendor order ID"
-              value={transaction.vendorOrderId ?? "Not linked to an order"}
-              mono={Boolean(transaction.vendorOrderId)}
-              className="sm:col-span-2"
+            <SummaryRow
+              icon={CalendarClock}
+              label="Posted"
+              value={formatFinanceDate(transaction.createdAt)}
+              detail={formatFinanceTime(transaction.createdAt)}
             />
           </dl>
+
+          <section className="flex flex-col gap-2">
+            <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              Record
+            </h3>
+            <dl className="overflow-hidden rounded-xl border border-border">
+              <Record
+                label="Entry type"
+                value={ledgerTypeLabel(transaction.type)}
+                detail={transaction.type}
+              />
+              <Record label="Transaction ID" value={transaction.id} mono />
+              <Record
+                label="Vendor order"
+                value={transaction.vendorOrderId ?? "Not linked to an order"}
+                mono={Boolean(transaction.vendorOrderId)}
+                muted={!transaction.vendorOrderId}
+              />
+            </dl>
+          </section>
         </DialogBody>
 
         <DialogFooter>
@@ -120,27 +138,104 @@ export function TransactionDetailsDialog({
   )
 }
 
-function Fact({
+type AmountTone = "credit" | "debit"
+
+const STAT_ICON = {
+  neutral: "bg-brand-soft text-brand-text",
+  credit: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  debit: "bg-amber-500/10 text-amber-900 dark:text-amber-100",
+} as const
+
+const AMOUNT_TEXT = {
+  credit: "text-emerald-700 dark:text-emerald-300",
+  debit: "text-amber-900 dark:text-amber-100",
+} as const
+
+function accountDetail(account: string) {
+  switch (account) {
+    case "pending":
+      return "Waiting out the settlement hold"
+    case "available":
+      return "Cleared and ready to withdraw"
+    case "reserved":
+      return "Held until the payout finishes"
+    default:
+      return "Wallet account for this entry"
+  }
+}
+
+function SummaryRow({
+  icon: Icon,
   label,
   value,
+  detail,
+  tone = "neutral",
+}: {
+  icon: LucideIcon
+  label: string
+  value: string
+  detail: string
+  tone?: "neutral" | AmountTone
+}) {
+  return (
+    <div className="flex items-start gap-3 border-b border-border px-3.5 py-3 last:border-b-0">
+      <span
+        className={cn(
+          "mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg",
+          STAT_ICON[tone]
+        )}
+      >
+        <Icon className="size-4" aria-hidden="true" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <dt className="text-xs text-muted-foreground">{label}</dt>
+        <dd
+          className={cn(
+            "mt-0.5 text-sm leading-snug font-semibold wrap-break-word",
+            tone !== "neutral" && AMOUNT_TEXT[tone]
+          )}
+        >
+          {value}
+        </dd>
+        <dd className="mt-0.5 text-xs leading-snug text-muted-foreground">
+          {detail}
+        </dd>
+      </div>
+    </div>
+  )
+}
+
+function Record({
+  label,
+  value,
+  detail,
   mono,
-  className,
+  muted,
 }: {
   label: string
   value: string
+  detail?: string
   mono?: boolean
-  className?: string
+  muted?: boolean
 }) {
   return (
-    <div className={cn("bg-card px-3 py-2.5", className)}>
+    <div className="grid gap-1 border-b border-border px-3.5 py-3 last:border-b-0 sm:grid-cols-[7.5rem_minmax(0,1fr)] sm:items-baseline sm:gap-4">
       <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd
-        className={cn(
-          "mt-0.5 text-sm wrap-break-word",
-          mono && "font-mono text-xs leading-relaxed"
-        )}
-      >
-        {value}
+      <dd className="min-w-0 sm:text-right">
+        <p
+          className={cn(
+            "text-sm font-medium wrap-break-word",
+            mono && "font-mono text-xs leading-relaxed font-normal",
+            muted && "font-sans text-sm font-normal text-muted-foreground"
+          )}
+        >
+          {value}
+        </p>
+        {detail ? (
+          <p className="mt-0.5 font-mono text-[0.7rem] text-muted-foreground sm:text-right">
+            {detail}
+          </p>
+        ) : null}
       </dd>
     </div>
   )

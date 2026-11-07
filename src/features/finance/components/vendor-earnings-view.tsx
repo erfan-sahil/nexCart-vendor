@@ -1,10 +1,6 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { ArrowRight } from "lucide-react"
-import { Link } from "react-router"
-
-import { Button } from "@/components/ui/button"
 
 import { FinanceErrorState, FinanceSummarySkeleton } from "./finance-states"
 import { WalletSummaryCards } from "./wallet-summary-cards"
@@ -21,25 +17,11 @@ export function VendorEarningsView() {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-6">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Earnings</h1>
-          <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-            Track settlement holds, funds you can withdraw, and lifetime
-            payouts.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link to="/finance/transactions">
-              View transactions
-              <ArrowRight className="size-4" aria-hidden="true" />
-            </Link>
-          </Button>
-          <Button size="sm" asChild>
-            <Link to="/finance/withdrawals">Request withdrawal</Link>
-          </Button>
-        </div>
+      <header>
+        <h1 className="text-2xl font-semibold tracking-tight">Earnings</h1>
+        <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+          Track settlement holds, funds you can withdraw, and lifetime payouts.
+        </p>
       </header>
 
       {query.isPending && !balances ? <FinanceSummarySkeleton /> : null}
