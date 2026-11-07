@@ -26,12 +26,7 @@ import { resolveAssetUrl } from "@/lib/api/assets"
 import { cn } from "@/lib/utils"
 
 import { PRODUCT_APPROVAL_LABEL, PRODUCT_STATUS_LABEL } from "../constants"
-import {
-  formatCount,
-  formatInventoryDate,
-  formatPriceRange,
-  formatUnits,
-} from "../lib/format"
+import { formatCount, formatPriceRange, formatUnits } from "../lib/format"
 import type { InventoryProduct } from "../types"
 
 import { StockLevelBadge } from "./stock-level-badge"
@@ -48,7 +43,7 @@ const columns = columnHelper.columns([
   columnHelper.accessor((product) => product.category.name, {
     id: "category",
     header: "Category",
-    cell: ({ getValue }) => getValue() || "—",
+    cell: ({ getValue }) => <p className="truncate">{getValue() || "—"}</p>,
   }),
   columnHelper.display({
     id: "price",
@@ -83,19 +78,14 @@ const columns = columnHelper.columns([
       </div>
     ),
   }),
-  columnHelper.accessor("updatedAt", {
-    header: "Updated",
-    cell: ({ getValue }) => formatInventoryDate(getValue()),
-  }),
 ])
 
 const CELL_CLASS: Record<string, string> = {
-  product: "min-w-56",
+  product: "w-44 max-w-44 overflow-hidden",
   category: "text-muted-foreground",
   price: "whitespace-nowrap",
   stock: "whitespace-nowrap",
   variants: "whitespace-nowrap text-muted-foreground",
-  updatedAt: "whitespace-nowrap text-muted-foreground",
   actions: "w-12 text-end",
 }
 
@@ -143,13 +133,16 @@ export function InventoryProductTable({
         isRefreshing && "pointer-events-none opacity-70"
       )}
     >
-      <Table>
+      <Table className="table-fixed">
         <TableCaption className="sr-only">Product inventory</TableCaption>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
+                <TableHead
+                  key={header.id}
+                  className={CELL_CLASS[header.column.id]}
+                >
                   {header.isPlaceholder ? null : (
                     <table.FlexRender header={header} />
                   )}

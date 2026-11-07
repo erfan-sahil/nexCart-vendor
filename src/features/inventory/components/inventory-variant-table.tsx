@@ -1,3 +1,4 @@
+import { useMemo } from "react"
 import {
   createColumnHelper,
   tableFeatures,
@@ -17,7 +18,6 @@ import { cn } from "@/lib/utils"
 
 import { PRODUCT_STATUS_LABEL } from "../constants"
 import {
-  formatInventoryDate,
   formatMoney,
   formatOptionLabel,
   formatUnits,
@@ -25,6 +25,7 @@ import {
 } from "../lib/format"
 import type { InventoryVariant } from "../types"
 
+import { InventoryVariantActions } from "./inventory-variant-actions"
 import { StockLevelBadge } from "./stock-level-badge"
 
 const features = tableFeatures({})
@@ -39,7 +40,7 @@ const columns = columnHelper.columns([
   columnHelper.accessor((variant) => variant.product.name, {
     id: "product",
     header: "Product",
-    cell: ({ getValue }) => getValue() || "—",
+    cell: ({ getValue }) => <p className="truncate">{getValue() || "—"}</p>,
   }),
   columnHelper.display({
     id: "price",
@@ -66,34 +67,51 @@ const columns = columnHelper.columns([
       </div>
     ),
   }),
-  columnHelper.accessor("updatedAt", {
-    header: "Updated",
-    cell: ({ getValue }) => formatInventoryDate(getValue()),
-  }),
 ])
 
 const CELL_CLASS: Record<string, string> = {
-  variant: "min-w-48",
-  product: "min-w-40",
+  variant: "w-44 max-w-44 overflow-hidden",
+  product: "w-44 max-w-44 overflow-hidden",
   price: "whitespace-nowrap",
   stock: "whitespace-nowrap",
-  updatedAt: "whitespace-nowrap text-muted-foreground",
+  actions: "w-12 text-end",
 }
 
 type InventoryVariantTableProps = {
   variants: InventoryVariant[]
   isRefreshing: boolean
   onOpen: (productId: string) => void
+  onDetails: (variant: InventoryVariant) => void
+  onUpdate: (variant: InventoryVariant) => void
 }
 
 export function InventoryVariantTable({
   variants,
   isRefreshing,
   onOpen,
+  onDetails,
+  onUpdate,
 }: InventoryVariantTableProps) {
+  const columnsWithActions = useMemo(
+    () => [
+      ...columns,
+      columnHelper.display({
+        id: "actions",
+        header: () => <span className="sr-only">Actions</span>,
+        cell: ({ row }) => (
+          <InventoryVariantActions
+            variant={row.original}
+            onDetails={onDetails}
+            onUpdate={onUpdate}
+          />
+        ),
+      }),
+    ],
+    [onDetails, onUpdate]
+  )
   const table = useTable({
     features,
-    columns,
+    columns: columnsWithActions,
     data: variants,
     getRowId: (variant) => variant.id,
   })
@@ -105,13 +123,16 @@ export function InventoryVariantTable({
         isRefreshing && "pointer-events-none opacity-70"
       )}
     >
-      <Table>
+      <Table className="table-fixed">
         <TableCaption className="sr-only">Variant inventory</TableCaption>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
+                <TableHead
+                  key={header.id}
+                  className={CELL_CLASS[header.column.id]}
+                >
                   {header.isPlaceholder ? null : (
                     <table.FlexRender header={header} />
                   )}
@@ -138,7 +159,15 @@ export function InventoryVariantTable({
               }}
             >
               {row.getAllCells().map((cell) => (
-                <TableCell key={cell.id} className={CELL_CLASS[cell.column.id]}>
+                <TableCell
+                  key={cell.id}
+                  className={CELL_CLASS[cell.column.id]}
+                  onClick={
+                    cell.column.id === "actions"
+                      ? (event) => event.stopPropagation()
+                      : undefined
+                  }
+                >
                   <table.FlexRender cell={cell} />
                 </TableCell>
               ))}

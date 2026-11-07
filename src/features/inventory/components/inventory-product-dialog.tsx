@@ -57,6 +57,7 @@ import type {
   StockLevel,
 } from "../types"
 
+import { InventoryVariantActions } from "./inventory-variant-actions"
 import { InventoryPagination } from "./inventory-states"
 import { StockLevelBadge } from "./stock-level-badge"
 
@@ -100,12 +101,16 @@ type InventoryProductDialogProps = {
   productId: string | null
   lowStockAt: number
   onClose: () => void
+  onVariantDetails: (variant: InventoryVariant) => void
+  onVariantUpdate: (variant: InventoryVariant) => void
 }
 
 export function InventoryProductDialog({
   productId,
   lowStockAt,
   onClose,
+  onVariantDetails,
+  onVariantUpdate,
 }: InventoryProductDialogProps) {
   if (!productId) {
     return null
@@ -117,6 +122,8 @@ export function InventoryProductDialog({
       productId={productId}
       lowStockAt={lowStockAt}
       onClose={onClose}
+      onVariantDetails={onVariantDetails}
+      onVariantUpdate={onVariantUpdate}
     />
   )
 }
@@ -125,10 +132,14 @@ function InventoryProductDetail({
   productId,
   lowStockAt,
   onClose,
+  onVariantDetails,
+  onVariantUpdate,
 }: {
   productId: string
   lowStockAt: number
   onClose: () => void
+  onVariantDetails: (variant: InventoryVariant) => void
+  onVariantUpdate: (variant: InventoryVariant) => void
 }) {
   const navigate = useNavigate()
   const [page, setPage] = useState(1)
@@ -189,6 +200,8 @@ function InventoryProductDetail({
                 <VariantRows
                   variants={detail.data?.variants ?? []}
                   isRefreshing={detail.isFetching && !detail.isPending}
+                  onDetails={onVariantDetails}
+                  onUpdate={onVariantUpdate}
                 />
                 {detail.data ? (
                   <InventoryPagination
@@ -445,9 +458,13 @@ function MixStat({
 function VariantRows({
   variants,
   isRefreshing,
+  onDetails,
+  onUpdate,
 }: {
   variants: InventoryVariant[]
   isRefreshing: boolean
+  onDetails: (variant: InventoryVariant) => void
+  onUpdate: (variant: InventoryVariant) => void
 }) {
   if (variants.length === 0) {
     return (
@@ -465,11 +482,12 @@ function VariantRows({
       )}
       aria-busy={isRefreshing}
     >
-      <div className="hidden grid-cols-[minmax(0,1.5fr)_7rem_5.5rem_auto] gap-3 border-b border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground sm:grid">
+      <div className="hidden grid-cols-[minmax(0,1.5fr)_7rem_5.5rem_auto_2.5rem] gap-3 border-b border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground sm:grid">
         <span>Variant</span>
         <span>Price</span>
         <span>Stock</span>
         <span>Level</span>
+        <span className="sr-only">Actions</span>
       </div>
       <ul>
         {variants.map((variant) => (
@@ -477,7 +495,11 @@ function VariantRows({
             key={variant.id}
             className="border-b border-border px-3 py-3 last:border-b-0"
           >
-            <VariantRow variant={variant} />
+            <VariantRow
+              variant={variant}
+              onDetails={onDetails}
+              onUpdate={onUpdate}
+            />
           </li>
         ))}
       </ul>
@@ -485,12 +507,20 @@ function VariantRows({
   )
 }
 
-function VariantRow({ variant }: { variant: InventoryVariant }) {
+function VariantRow({
+  variant,
+  onDetails,
+  onUpdate,
+}: {
+  variant: InventoryVariant
+  onDetails: (variant: InventoryVariant) => void
+  onUpdate: (variant: InventoryVariant) => void
+}) {
   const discounted = hasDiscount(variant.price, variant.currentPrice)
   const status = STATUS_BADGE[variant.status]
 
   return (
-    <div className="grid gap-3 sm:grid-cols-[minmax(0,1.5fr)_7rem_5.5rem_auto] sm:items-center">
+    <div className="grid gap-3 sm:grid-cols-[minmax(0,1.5fr)_7rem_5.5rem_auto_2.5rem] sm:items-center">
       <div className="min-w-0">
         <div className="flex min-w-0 items-center gap-2">
           <p className="truncate text-sm font-medium">
@@ -531,6 +561,13 @@ function VariantRow({ variant }: { variant: InventoryVariant }) {
             icon={status.icon}
           />
         ) : null}
+      </div>
+      <div className="justify-self-end">
+        <InventoryVariantActions
+          variant={variant}
+          onDetails={onDetails}
+          onUpdate={onUpdate}
+        />
       </div>
     </div>
   )

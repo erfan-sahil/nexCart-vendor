@@ -10,11 +10,14 @@ import {
 } from "../hooks"
 import type {
   InventoryProductSort,
+  InventoryVariant,
   InventoryVariantSort,
   InventoryView,
 } from "../types"
 
 import { InventoryProductDialog } from "./inventory-product-dialog"
+import { InventoryVariantDetailsDialog } from "./inventory-variant-details-dialog"
+import { InventoryVariantUpdateDialog } from "./inventory-variant-update-dialog"
 import { InventoryProductTable } from "./inventory-product-table"
 import {
   InventoryEmptyState,
@@ -29,6 +32,12 @@ import { InventoryVariantTable } from "./inventory-variant-table"
 export function InventoryCatalog() {
   const navigate = useNavigate()
   const [productId, setProductId] = useState<string | null>(null)
+  const [variantDetails, setVariantDetails] = useState<InventoryVariant | null>(
+    null
+  )
+  const [variantUpdate, setVariantUpdate] = useState<InventoryVariant | null>(
+    null
+  )
   const { query, updateQuery, clearFilters, filtered } = useInventoryParams()
   const summary = useInventorySummary(query.lowStockAt)
   const products = useInventoryProducts(query)
@@ -65,6 +74,17 @@ export function InventoryCatalog() {
       updateQuery({ sort, page: 1 }),
     [updateQuery]
   )
+
+  const openVariantDetails = useCallback((variant: InventoryVariant) => {
+    setProductId(null)
+    setVariantUpdate(null)
+    setVariantDetails(variant)
+  }, [])
+  const openVariantUpdate = useCallback((variant: InventoryVariant) => {
+    setProductId(null)
+    setVariantDetails(null)
+    setVariantUpdate(variant)
+  }, [])
 
   const showSkeleton = active.isPending
   const isEmpty = page !== undefined && page.items.length === 0
@@ -131,6 +151,8 @@ export function InventoryCatalog() {
             variants={variants.data.items}
             isRefreshing={variants.isFetching && !variants.isPending}
             onOpen={setProductId}
+            onDetails={openVariantDetails}
+            onUpdate={openVariantUpdate}
           />
         ) : null}
 
@@ -150,6 +172,17 @@ export function InventoryCatalog() {
         productId={productId}
         lowStockAt={query.lowStockAt}
         onClose={() => setProductId(null)}
+        onVariantDetails={openVariantDetails}
+        onVariantUpdate={openVariantUpdate}
+      />
+      <InventoryVariantDetailsDialog
+        variant={variantDetails}
+        onClose={() => setVariantDetails(null)}
+        onUpdate={openVariantUpdate}
+      />
+      <InventoryVariantUpdateDialog
+        variant={variantUpdate}
+        onClose={() => setVariantUpdate(null)}
       />
     </section>
   )
