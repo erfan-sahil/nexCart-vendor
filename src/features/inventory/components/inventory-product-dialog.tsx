@@ -20,10 +20,7 @@ import {
   type LucideIcon,
 } from "lucide-react"
 
-import {
-  StatusBadge,
-  type StatusBadgeTone,
-} from "@/components/shared/status-badge"
+import { CustomBadge, type BadgeColor } from "@/components/shared"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -67,20 +64,20 @@ const DETAIL_PAGE_SIZE = 20
 
 const STATUS_BADGE: Record<
   CatalogStatus,
-  { icon: LucideIcon; tone: StatusBadgeTone }
+  { icon: LucideIcon; color: BadgeColor }
 > = {
-  active: { icon: CircleCheck, tone: "success" },
-  archived: { icon: Archive, tone: "neutral" },
+  active: { icon: CircleCheck, color: "success" },
+  archived: { icon: Archive, color: "neutral" },
 }
 
 const APPROVAL_BADGE: Record<
   ProductApprovalStatus,
-  { icon: LucideIcon; tone: StatusBadgeTone }
+  { icon: LucideIcon; color: BadgeColor }
 > = {
-  pending: { icon: Clock, tone: "warning" },
-  submitted: { icon: Send, tone: "warning" },
-  approved: { icon: BadgeCheck, tone: "success" },
-  rejected: { icon: CircleX, tone: "danger" },
+  pending: { icon: Clock, color: "warning" },
+  submitted: { icon: Send, color: "warning" },
+  approved: { icon: BadgeCheck, color: "success" },
+  rejected: { icon: CircleX, color: "danger" },
 }
 
 const STOCK_TONE: Record<StockLevel, string> = {
@@ -277,18 +274,21 @@ function ProductHeader({ product }: { product: InventoryProduct }) {
         </DialogDescription>
         <div className="mt-3 flex flex-wrap gap-1.5">
           <StockLevelBadge level={product.stockLevel} />
-          <StatusBadge icon={status.icon} tone={status.tone}>
-            {PRODUCT_STATUS_LABEL[product.status]}
-          </StatusBadge>
-          <StatusBadge icon={approval.icon} tone={approval.tone}>
-            {PRODUCT_APPROVAL_LABEL[product.approvalStatus]}
-          </StatusBadge>
-          <StatusBadge
+          <CustomBadge
+            name={PRODUCT_STATUS_LABEL[product.status]}
+            color={status.color}
+            icon={status.icon}
+          />
+          <CustomBadge
+            name={PRODUCT_APPROVAL_LABEL[product.approvalStatus]}
+            color={approval.color}
+            icon={approval.icon}
+          />
+          <CustomBadge
+            name={product.isPublished ? "Published" : "Unpublished"}
+            color={product.isPublished ? "brand" : "neutral"}
             icon={product.isPublished ? Eye : EyeOff}
-            tone={product.isPublished ? "brand" : "neutral"}
-          >
-            {product.isPublished ? "Published" : "Unpublished"}
-          </StatusBadge>
+          />
         </div>
       </div>
     </div>
@@ -497,9 +497,7 @@ function VariantRow({ variant }: { variant: InventoryVariant }) {
             {formatOptionLabel(variant.options)}
           </p>
           {variant.isDefault ? (
-            <StatusBadge icon={Star} tone="brand">
-              Default
-            </StatusBadge>
+            <CustomBadge name="Default" color="brand" icon={Star} />
           ) : null}
         </div>
         <p className="mt-0.5 truncate text-xs text-muted-foreground">
@@ -527,9 +525,11 @@ function VariantRow({ variant }: { variant: InventoryVariant }) {
       <div className="flex flex-wrap gap-1.5">
         <StockLevelBadge level={variant.stockLevel} />
         {variant.status === "archived" ? (
-          <StatusBadge icon={status.icon} tone={status.tone}>
-            {PRODUCT_STATUS_LABEL[variant.status]}
-          </StatusBadge>
+          <CustomBadge
+            name={PRODUCT_STATUS_LABEL[variant.status]}
+            color={status.color}
+            icon={status.icon}
+          />
         ) : null}
       </div>
     </div>

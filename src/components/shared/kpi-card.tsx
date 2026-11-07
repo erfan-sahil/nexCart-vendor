@@ -1,5 +1,6 @@
 import { Minus, TrendingDown, TrendingUp, type LucideIcon } from "lucide-react"
 
+import { CustomBadge } from "@/components/shared/custom-badge"
 import { cn } from "@/lib/utils"
 import { formatPercent } from "@/lib/format"
 
@@ -32,41 +33,22 @@ type KpiCardProps = {
 
 function DeltaBadge({ metric }: { metric: PeriodMetric }) {
   if (metric.changePercent === null) {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-        <Minus className="size-3" aria-hidden="true" />
-        New period
-      </span>
-    )
+    return <CustomBadge name="New period" color="neutral" icon={Minus} />
   }
 
   if (metric.changePercent === 0) {
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-        <Minus className="size-3" aria-hidden="true" />
-        Flat vs prior
-      </span>
-    )
+    return <CustomBadge name="Flat vs prior" color="neutral" icon={Minus} />
   }
 
   const up = metric.changePercent > 0
 
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
-        up
-          ? "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
-          : "bg-rose-500/10 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300"
-      )}
-    >
-      {up ? (
-        <TrendingUp className="size-3" aria-hidden="true" />
-      ) : (
-        <TrendingDown className="size-3" aria-hidden="true" />
-      )}
-      {formatPercent(metric.changePercent)} vs prior
-    </span>
+    <CustomBadge
+      name={`${formatPercent(metric.changePercent)} vs prior`}
+      color={up ? "success" : "rose"}
+      icon={up ? TrendingUp : TrendingDown}
+      className="tabular-nums"
+    />
   )
 }
 

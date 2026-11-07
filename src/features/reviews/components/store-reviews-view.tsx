@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react"
 import { Loader2, Search } from "lucide-react"
 
+import { CustomBadge } from "@/components/shared"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import {
   InputGroup,
@@ -116,9 +117,11 @@ export function StoreReviewsView() {
         <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-5">
           <div className="flex items-center gap-2.5">
             <h2 className="text-sm font-semibold">Store reviews</h2>
-            <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground tabular-nums">
-              {pagination ? pagination.total : "—"}
-            </span>
+            <CustomBadge
+              name={pagination ? String(pagination.total) : "—"}
+              color="neutral"
+              className="tabular-nums"
+            />
           </div>
           {reviewsQuery.isFetching && !reviewsQuery.isLoading ? (
             <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">

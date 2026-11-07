@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react"
 import { Archive, CircleCheck, Package, Star } from "lucide-react"
 
-import { StatusBadge } from "@/components/shared/status-badge"
+import { CustomBadge } from "@/components/shared"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -326,16 +326,13 @@ function VariantRow({ variant }: { variant: ProductVariant }) {
       </p>
       <div className="flex flex-wrap gap-1.5">
         {variant.isDefault ? (
-          <StatusBadge icon={Star} tone="brand">
-            Default
-          </StatusBadge>
+          <CustomBadge name="Default" color="brand" icon={Star} />
         ) : null}
-        <StatusBadge
+        <CustomBadge
+          name={variant.status === "active" ? "Active" : "Archived"}
+          color={variant.status === "active" ? "success" : "neutral"}
           icon={variant.status === "active" ? CircleCheck : Archive}
-          tone={variant.status === "active" ? "success" : "neutral"}
-        >
-          {variant.status === "active" ? "Active" : "Archived"}
-        </StatusBadge>
+        />
       </div>
     </div>
   )

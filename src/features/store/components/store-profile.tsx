@@ -1,7 +1,7 @@
 import { CircleCheck, CircleOff, ShieldAlert } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { StatusBadge } from "@/components/shared"
+import { CustomBadge } from "@/components/shared"
 import { ApiError } from "@/lib/api/errors"
 import { resolveAssetUrl } from "@/lib/api/assets"
 
@@ -143,16 +143,13 @@ function StoreOverview({ store }: { store: VendorStore }) {
 
           <div className="flex flex-wrap gap-2 sm:pb-1">
             {store.isSuspended ? (
-              <StatusBadge icon={ShieldAlert} tone="danger">
-                Suspended
-              </StatusBadge>
+              <CustomBadge name="Suspended" color="danger" icon={ShieldAlert} />
             ) : null}
-            <StatusBadge
+            <CustomBadge
+              name={store.isActive ? "Open" : "Closed"}
+              color={store.isActive ? "success" : "neutral"}
               icon={store.isActive ? CircleCheck : CircleOff}
-              tone={store.isActive ? "success" : "neutral"}
-            >
-              {store.isActive ? "Open" : "Closed"}
-            </StatusBadge>
+            />
           </div>
         </div>
 

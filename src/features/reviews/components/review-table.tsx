@@ -7,7 +7,7 @@ import {
   Store,
 } from "lucide-react"
 
-import { StatusBadge } from "@/components/shared"
+import { CustomBadge } from "@/components/shared"
 import { Button } from "@/components/ui/button"
 import {
   Table,
@@ -135,9 +135,11 @@ export function ReviewTable({
                       {review.replyCount}
                     </span>
                     {review.hasVendorReply ? (
-                      <StatusBadge icon={Store} tone="success">
-                        Replied
-                      </StatusBadge>
+                      <CustomBadge
+                        name="Replied"
+                        color="success"
+                        icon={Store}
+                      />
                     ) : null}
                   </div>
                 </TableCell>
