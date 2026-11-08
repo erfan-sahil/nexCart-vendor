@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils"
 
 const LOGO_SRC = {
   dark: "/nexcart-logo-white.png",
-  light: "/nexcart-logo-black.png",
+  light: "/nexcart-logo-black-2.png",
 } as const
 
 /** object-view-box trims canvas padding (inset: top right bottom left). */

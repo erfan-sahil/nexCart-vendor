@@ -27,12 +27,10 @@ export function LoginPage() {
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,var(--brand-soft),transparent_58%)]"
       />
-      <Card className="relative w-full max-w-md !gap-0 bg-black py-0 text-white shadow-sm">
-        <div className="flex flex-col items-center gap-4 pt-4 text-center">
-          <div className="flex w-full justify-center bg-black py-3">
-            <BrandLogo className="h-10" />
-          </div>
-          <div className="px-6">
+      <Card className="relative w-full max-w-md !gap-0 py-0 shadow-sm">
+        <div className="flex w-full flex-col items-center gap-4 bg-sidebar-accent px-6 py-6 text-center dark:bg-sidebar">
+          <BrandLogo tone="auto" className="h-10" />
+          <div>
             <h1 className="text-2xl leading-none font-semibold tracking-tight">
               Welcome back
             </h1>
