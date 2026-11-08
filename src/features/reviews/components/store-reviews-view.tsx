@@ -67,16 +67,6 @@ export function StoreReviewsView() {
 
   return (
     <section className="flex w-full flex-col gap-4">
-      <div>
-        <h1 className="font-display text-2xl font-semibold tracking-tight">
-          Reviews
-        </h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-          Buyer reviews left on products from your store. Reply to build trust
-          with shoppers.
-        </p>
-      </div>
-
       <div className="rounded-xl border border-border bg-card p-4 text-card-foreground shadow-sm sm:p-5">
         <FieldGroup className="gap-4 sm:flex-row sm:items-end">
           <Field className="min-w-0 flex-1">

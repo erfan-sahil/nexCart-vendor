@@ -16,14 +16,7 @@ export function VendorEarningsView() {
   const balances = query.data
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Earnings</h1>
-        <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-          Track settlement holds, funds you can withdraw, and lifetime payouts.
-        </p>
-      </header>
-
+    <div className="flex w-full flex-col gap-6">
       {query.isPending && !balances ? <FinanceSummarySkeleton /> : null}
 
       {query.isError ? (

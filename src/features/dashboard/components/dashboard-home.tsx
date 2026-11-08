@@ -50,22 +50,8 @@ export function DashboardHome() {
   const label = rangeLabel(range)
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
-      <header
-        className={`flex flex-col gap-4 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6 ${dashboardPanelClass}`}
-      >
-        <div>
-          <p className="text-xs font-medium tracking-wider text-brand-text uppercase">
-            Overview
-          </p>
-          <h1 className="mt-1 font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
-            Dashboard
-          </h1>
-          <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-            Performance snapshot for the last {label}, compared to the prior{" "}
-            {label}.
-          </p>
-        </div>
+    <div className="flex w-full flex-col gap-8">
+      <header className={`flex justify-end p-5 sm:p-6 ${dashboardPanelClass}`}>
         <RangeSelect
           value={range}
           onValueChange={setRange}

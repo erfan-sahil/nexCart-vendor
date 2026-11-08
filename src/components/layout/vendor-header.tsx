@@ -19,7 +19,7 @@ export function VendorHeader({
   onToggleCollapsed,
 }: VendorHeaderProps) {
   const { theme, setTheme } = useTheme()
-  const { title, description } = usePageMeta()
+  const { title: pageTitle } = usePageMeta()
   const isDark = theme === "dark"
   const today = new Intl.DateTimeFormat("en", {
     weekday: "long",
@@ -28,8 +28,8 @@ export function VendorHeader({
   }).format(new Date())
 
   useEffect(() => {
-    document.title = `${title} · NexCart Vendor`
-  }, [title])
+    document.title = `${pageTitle} · NexCart Vendor`
+  }, [pageTitle])
 
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border bg-background/90 px-4 backdrop-blur sm:px-6">
@@ -58,8 +58,8 @@ export function VendorHeader({
       </Button>
 
       <div className="min-w-0 flex-1">
-        <h1 className="truncate text-base font-semibold">{title}</h1>
-        <p className="truncate text-xs text-muted-foreground">{description}</p>
+        <p className="truncate text-base font-semibold">Vendor dashboard</p>
+        <p className="truncate text-xs text-muted-foreground">NexCart Vendor</p>
       </div>
 
       <p className="hidden text-sm text-muted-foreground md:block">{today}</p>

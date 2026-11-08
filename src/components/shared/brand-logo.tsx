@@ -2,44 +2,34 @@ import { cn } from "@/lib/utils"
 
 const LOGO_SRC = {
   dark: "/nexcart-logo-white.png",
-  light: "/nexcart-logo-light.png",
+  light: "/nexcart-logo-black.png",
 } as const
 
-/**
- * The white asset is a wide PNG with padding; object-view-box crops to pixels.
- * The light asset is already trimmed (orange cart + dark wordmark).
- */
+/** object-view-box trims canvas padding (inset: top right bottom left). */
 const PADDED_VIEW = {
-  wordmark: "inset(32.01% 7.66% 27.32% 8.33%)",
+  wordmark: {
+    light: "inset(19% 7.66% 15% 8.33%)",
+    dark: "inset(32.01% 7.66% 27.32% 8.33%)",
+  },
   mark: "inset(32.01% 66.05% 27.32% 8.33%)",
 } as const
 
-type BrandLogoProps = {
-  className?: string
-  variant?: keyof typeof PADDED_VIEW
-  /** auto swaps marks for light/dark UI; on-dark is the white wordmark asset */
-  tone?: "auto" | "on-dark" | "on-light"
+type LogoVariant = "wordmark" | "mark"
+
+function viewBox(src: string, variant: LogoVariant): string {
+  if (variant === "mark") {
+    return PADDED_VIEW.mark
+  }
+  return src === LOGO_SRC.light
+    ? PADDED_VIEW.wordmark.light
+    : PADDED_VIEW.wordmark.dark
 }
 
-function logoClassName(
-  variant: keyof typeof PADDED_VIEW,
-  className?: string,
-  compact?: boolean
-) {
-  return cn(
-    "w-auto max-w-none",
-    compact
-      ? variant === "mark"
-        ? "h-7 w-7 object-cover object-left"
-        : "h-7 max-w-[9.5rem] object-contain object-left"
-      : cn(
-          "object-cover",
-          variant === "mark"
-            ? "size-7 overflow-hidden object-left"
-            : "aspect-[4.96/1] h-7"
-        ),
-    className
-  )
+type BrandLogoProps = {
+  className?: string
+  variant?: LogoVariant
+  /** auto swaps marks for light/dark UI; on-dark is the white wordmark asset */
+  tone?: "auto" | "on-dark" | "on-light"
 }
 
 function LogoImage({
@@ -48,18 +38,27 @@ function LogoImage({
   className,
 }: {
   src: string
-  variant: keyof typeof PADDED_VIEW
+  variant: LogoVariant
   className?: string
 }) {
-  const padded = src === LOGO_SRC.dark
-
   return (
     <img
       src={src}
       alt="NexCart"
-      style={padded ? { objectViewBox: PADDED_VIEW[variant] } : undefined}
-      className={logoClassName(variant, className, !padded)}
+      style={{ objectViewBox: viewBox(src, variant) }}
+      className={cn(
+        "absolute inset-0 size-full object-cover object-left",
+        className
+      )}
     />
+  )
+}
+
+function logoShellClass(variant: LogoVariant, className?: string) {
+  return cn(
+    "relative inline-block shrink-0",
+    variant === "mark" ? "aspect-square h-7" : "aspect-[4.96/1] h-7 max-w-full",
+    className
   )
 }
 
@@ -70,22 +69,26 @@ export function BrandLogo({
 }: BrandLogoProps) {
   if (tone === "auto") {
     return (
-      <>
+      <span className={logoShellClass(variant, className)}>
         <LogoImage
           src={LOGO_SRC.light}
           variant={variant}
-          className={cn(className, "dark:hidden")}
+          className="dark:hidden"
         />
         <LogoImage
           src={LOGO_SRC.dark}
           variant={variant}
-          className={cn(className, "hidden dark:block")}
+          className="hidden dark:block"
         />
-      </>
+      </span>
     )
   }
 
   const src = tone === "on-light" ? LOGO_SRC.light : LOGO_SRC.dark
 
-  return <LogoImage src={src} variant={variant} className={className} />
+  return (
+    <span className={logoShellClass(variant, className)}>
+      <LogoImage src={src} variant={variant} />
+    </span>
+  )
 }

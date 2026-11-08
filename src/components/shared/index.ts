@@ -1,4 +1,5 @@
 export { BrandLogo } from "./brand-logo"
+export { VendorPageIntro } from "./vendor-page-intro"
 export { KpiCard, type KpiTone, type PeriodMetric } from "./kpi-card"
 export { PagePlaceholder } from "./page-placeholder"
 export { RangeSelect } from "./range-select"
