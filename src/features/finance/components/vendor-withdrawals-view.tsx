@@ -94,15 +94,7 @@ export function VendorWithdrawalsView() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Withdrawals</h1>
-        <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-          Request payouts from your available balance. Pending requests can be
-          cancelled until admin review begins.
-        </p>
-      </header>
-
+    <div className="flex w-full flex-col gap-6">
       {balances.isError ? (
         <FinanceErrorState
           title="Could not load balance"

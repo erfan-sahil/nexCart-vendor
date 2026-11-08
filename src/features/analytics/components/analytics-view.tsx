@@ -64,22 +64,8 @@ export function AnalyticsView() {
     data.kpis.grossSales.current === 0 && data.kpis.orders.current === 0
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
-      <header
-        className={`flex flex-col gap-4 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-6 ${analyticsPanelClass}`}
-      >
-        <div>
-          <p className="text-xs font-medium tracking-wider text-brand-text uppercase">
-            Insights
-          </p>
-          <h1 className="mt-1 font-heading text-2xl font-semibold tracking-tight sm:text-3xl">
-            Analytics
-          </h1>
-          <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-            Sales, product, and fulfillment performance for the last {label},
-            compared to the prior {label}.
-          </p>
-        </div>
+    <div className="flex w-full flex-col gap-8">
+      <header className={`flex justify-end p-5 sm:p-6 ${analyticsPanelClass}`}>
         <RangeSelect
           value={range}
           onValueChange={setRange}

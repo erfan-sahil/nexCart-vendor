@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react"
 import { Outlet } from "react-router"
 
+import { VendorPageIntro } from "@/components/shared"
+
 import { VendorHeader } from "./vendor-header"
 import { VendorSidebar } from "./vendor-sidebar"
 
@@ -55,7 +57,10 @@ export function VendorShell() {
           onToggleCollapsed={() => setCollapsed((current) => !current)}
         />
         <main className="flex-1 px-4 py-5 sm:px-5 sm:py-6">
-          <Outlet />
+          <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 sm:gap-6">
+            <VendorPageIntro />
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

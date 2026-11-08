@@ -103,13 +103,10 @@ export function VendorSidebar({
         <div className={cn("hidden shrink-0", collapsed && "lg:block")}>
           <BrandLogo tone="auto" variant="mark" className="h-7" />
         </div>
-        <div className={cn("min-w-0 flex-1", collapsed && "lg:hidden")}>
-          <p className="truncate text-xs text-sidebar-foreground/60">Vendor</p>
-        </div>
         <button
           type="button"
           onClick={onClose}
-          className="grid size-8 place-items-center rounded-lg text-sidebar-foreground hover:bg-sidebar-accent lg:hidden"
+          className="ml-auto grid size-8 place-items-center rounded-lg text-sidebar-foreground hover:bg-sidebar-accent lg:hidden"
           aria-label="Close navigation"
         >
           <X className="size-4" />

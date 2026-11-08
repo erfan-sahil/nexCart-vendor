@@ -31,15 +31,7 @@ export function VendorTransactionsView() {
   const totalPages = pagination?.totalPages ?? 1
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Transactions</h1>
-        <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-          Ledger history for sales, commissions, settlements, refunds, and
-          withdrawals. Select a row to view full details.
-        </p>
-      </header>
-
+    <div className="flex w-full flex-col gap-6">
       <div className="overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-sm">
         {query.isPending && !query.data ? (
           <FinanceTableSkeleton />
