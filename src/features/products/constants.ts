@@ -20,7 +20,7 @@ export const DEFAULT_PRODUCT_SORT = "-createdAt" as const
 
 export const DEFAULT_PRODUCT_PAGE_SIZE = 20
 
-export const MAX_PRODUCT_IMAGES = 8
+export const MAX_PRODUCT_IMAGES = 5
 
 export const MAX_PRODUCT_FEATURES = 30
 

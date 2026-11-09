@@ -22,6 +22,7 @@ const offerDraftSchema = z.object({
   discountType: z.enum(["", "percent", "amount"]),
   discountValue: z.string(),
   stock: z.string(),
+  image: z.string(),
   attributes: z.record(attributeDraftSchema),
 })
 

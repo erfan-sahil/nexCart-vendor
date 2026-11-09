@@ -6,6 +6,7 @@ import type {
   CreateProductPayload,
   UpdateProductPayload,
 } from "../lib/create-product"
+import { imageIdsByUpload } from "../lib/product-images"
 import {
   catalogKeys,
   createProduct,
@@ -66,13 +67,20 @@ export function useCreateProductWithOffer() {
     mutationFn: async (input: {
       product: CreateProductPayload
       variants: CreateVariantPayload[]
+      /** Upload URL chosen for each variant, aligned with `variants`. */
+      variantImages: string[]
       submitForApproval: boolean
     }) => {
       const created = await createProduct(input.product)
+      const imageIds = imageIdsByUpload(input.product.images, created)
 
       try {
-        for (const variant of input.variants) {
-          await createVariant(created.id, variant)
+        for (const [index, variant] of input.variants.entries()) {
+          const imageId = imageIds.get(input.variantImages[index] ?? "")
+          await createVariant(
+            created.id,
+            imageId ? { ...variant, imageId } : variant
+          )
         }
       } catch (error) {
         await deleteProduct(created.id).catch(() => undefined)
