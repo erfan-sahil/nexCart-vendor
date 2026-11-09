@@ -31,8 +31,11 @@ import {
   variantAssignments,
   type AttributeDraft,
 } from "../lib/create-product"
+import type { VariantImageChoice } from "../lib/product-images"
 import type { ProductFormValues } from "../lib/product-form-schema"
 import type { CategoryAttribute } from "../types"
+
+import { VariantImagePicker } from "./variant-image-picker"
 
 const selectContentClass =
   "pointer-events-auto z-[70] w-(--radix-select-trigger-width)"
@@ -44,11 +47,13 @@ type ProductOfferFieldsProps = {
   required?: boolean
   canUseVariants: boolean
   missingVariantOptions?: boolean
+  images: VariantImageChoice[]
 }
 
 export function ProductOfferFields({
   control,
   assignments,
+  images,
   disabled = false,
   required = false,
   canUseVariants,
@@ -234,6 +239,24 @@ export function ProductOfferFields({
             />
             <CurrentPrice control={control} index={index} />
           </div>
+
+          {offerMode === "variants" ? (
+            <Controller
+              name={`offers.${index}.image`}
+              control={control}
+              render={({ field }) => (
+                <div className="border-t border-border pt-3">
+                  <VariantImagePicker
+                    name={`offer-image-${offer.key}`}
+                    choices={images}
+                    value={field.value}
+                    disabled={disabled}
+                    onChange={field.onChange}
+                  />
+                </div>
+              )}
+            />
+          ) : null}
         </div>
       ))}
 

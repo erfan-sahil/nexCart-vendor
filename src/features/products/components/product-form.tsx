@@ -55,6 +55,7 @@ import {
   type ProductFormValues,
 } from "../lib/product-form-schema"
 import type { CategoryAttribute, Product, ProductVariant } from "../types"
+import { choicesFromProduct, choicesFromUploads } from "../lib/product-images"
 import { sellableCategories } from "../lib/sellable-categories"
 import {
   createVariant,
@@ -68,6 +69,7 @@ import {
 import { ProductAttributeFields } from "./product-attribute-fields"
 import { ProductFeatureFields } from "./product-feature-fields"
 import { ProductImageField } from "./product-image-field"
+import { ProductImageManager } from "./product-image-manager"
 import { ProductOfferFields } from "./product-offer-fields"
 
 const selectContentClass =
@@ -222,7 +224,23 @@ export function ProductForm({
   })
   const categoryId = useWatch({ control: form.control, name: "categoryId" })
   const status = useWatch({ control: form.control, name: "status" })
+  const uploads = useWatch({ control: form.control, name: "images" })
   const attributes = useCategoryAttributes(categoryId)
+  const imageChoices = useMemo(
+    () => (product ? choicesFromProduct(product) : choicesFromUploads(uploads)),
+    [product, uploads]
+  )
+
+  const clearVariantImages = (keep: (ref: string) => boolean) => {
+    form.getValues("offers").forEach((offer, index) => {
+      if (offer.image && !keep(offer.image)) {
+        form.setValue(`offers.${index}.image`, "", { shouldDirty: true })
+      }
+    })
+  }
+
+  const variantImageFor = (ref: string) =>
+    imageChoices.some((choice) => choice.ref === ref) ? ref : ""
 
   useEffect(() => {
     schemaOptions.current = {
@@ -349,11 +367,19 @@ export function ProductForm({
               continue
             }
 
+            const image =
+              values.offerMode === "variants"
+                ? { imageId: variantImageFor(row.image) }
+                : {}
+
             if (isStoredVariantId(row.key)) {
               kept.add(row.key)
-              await updateVariant(product.id, row.key, toVariantUpdate(variant))
+              await updateVariant(product.id, row.key, {
+                ...toVariantUpdate(variant),
+                ...image,
+              })
             } else {
-              await createVariant(product.id, variant)
+              await createVariant(product.id, { ...variant, ...image })
             }
           }
 
@@ -380,6 +406,10 @@ export function ProductForm({
       const result = await createProduct.mutateAsync({
         product: toCreatePayload(values, built.inputs, values.images),
         variants: offer.payloads,
+        variantImages:
+          values.offerMode === "variants"
+            ? values.offers.map((row) => variantImageFor(row.image))
+            : [],
         submitForApproval: values.status === "active",
       })
 
@@ -474,7 +504,17 @@ export function ProductForm({
                 : "grid items-start gap-6 sm:col-span-2 md:grid-cols-[22rem_minmax(0,1fr)]"
             }
           >
-            {editing ? null : (
+            {product ? (
+              <ProductImageManager
+                product={product}
+                control={form.control}
+                disabled={saving}
+                onPendingChange={setUploadingImage}
+                onRemoved={(imageId) =>
+                  clearVariantImages((ref) => ref !== imageId)
+                }
+              />
+            ) : (
               <Controller
                 name="images"
                 control={form.control}
@@ -487,6 +527,7 @@ export function ProductForm({
                     onPendingChange={setUploadingImage}
                     onChange={(next) => {
                       field.onChange(next)
+                      clearVariantImages((ref) => next.includes(ref))
                       if (fieldState.error) {
                         void form.trigger("images")
                       }
@@ -778,6 +819,7 @@ export function ProductForm({
                   attributes.isSuccess &&
                   variantAxes.length === 0
                 }
+                images={imageChoices}
               />
             </div>
           )}

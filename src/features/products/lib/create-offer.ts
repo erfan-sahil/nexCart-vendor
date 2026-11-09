@@ -20,6 +20,8 @@ export type OfferDraft = {
   discountType: "" | DiscountType
   discountValue: string
   stock: string
+  /** Chosen product image: its upload URL while creating, its id while editing. "" for none. */
+  image: string
   attributes: Record<string, AttributeDraft>
 }
 
@@ -42,6 +44,7 @@ export function emptyOffer(): OfferDraft {
     discountType: "",
     discountValue: "",
     stock: "",
+    image: "",
     attributes: {},
   }
 }
@@ -83,6 +86,7 @@ export function offersFromVariants(variants: ProductVariant[]): {
       discountValue:
         variant.discountValue === null ? "" : String(variant.discountValue),
       stock: String(variant.stock),
+      image: variant.image?.id ?? "",
       attributes: Object.fromEntries(
         variant.attributes.map((attribute) => [
           attribute.attributeId,

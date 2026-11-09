@@ -11,14 +11,9 @@ import {
 import { ApiError } from "@/lib/api/errors"
 import { notifyError, notifySuccess, notifyWarning } from "@/lib/notify"
 
-import {
-  MAX_PRODUCT_IMAGE_BYTES,
-  MAX_PRODUCT_IMAGES,
-  PRODUCT_IMAGE_TYPES,
-} from "../constants"
+import { MAX_PRODUCT_IMAGES } from "../constants"
+import { PRODUCT_IMAGE_ACCEPT, pickImageFiles } from "../lib/product-images"
 import { uploadProductImage } from "../services"
-
-const IMAGE_TYPES: readonly string[] = PRODUCT_IMAGE_TYPES
 
 type ProductImageFieldProps = {
   images: string[]
@@ -61,34 +56,7 @@ export function ProductImageField({
       return
     }
 
-    const remaining = MAX_PRODUCT_IMAGES - images.length
-
-    if (remaining < 1) {
-      setLocalError(`A product can have at most ${MAX_PRODUCT_IMAGES} images.`)
-      return
-    }
-
-    const accepted: File[] = []
-    let problem: string | null = null
-
-    for (const file of files) {
-      if (accepted.length >= remaining) {
-        problem = `A product can have at most ${MAX_PRODUCT_IMAGES} images.`
-        break
-      }
-
-      if (!IMAGE_TYPES.includes(file.type)) {
-        problem = "Upload a JPEG, PNG, WebP, or GIF image."
-        continue
-      }
-
-      if (file.size > MAX_PRODUCT_IMAGE_BYTES) {
-        problem = "Image must be 5 MB or smaller."
-        continue
-      }
-
-      accepted.push(file)
-    }
+    const { accepted, problem } = pickImageFiles(files, images.length)
 
     if (accepted.length === 0) {
       setLocalError(problem)
@@ -151,7 +119,7 @@ export function ProductImageField({
         ref={inputRef}
         id="product-images"
         type="file"
-        accept={IMAGE_TYPES.join(",")}
+        accept={PRODUCT_IMAGE_ACCEPT}
         multiple
         className="sr-only"
         required={required}

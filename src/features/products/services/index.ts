@@ -5,6 +5,7 @@ export {
 } from "./catalog.api"
 export { catalogKeys } from "./catalog.query"
 export {
+  addProductImages,
   createProduct,
   createVariant,
   deleteProduct,
@@ -13,6 +14,8 @@ export {
   getProductVariant,
   listProductVariants,
   listVendorProducts,
+  removeProductImage,
+  setProductThumbnail,
   submitProduct,
   updateProduct,
   updateVariant,

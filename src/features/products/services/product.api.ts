@@ -70,24 +70,73 @@ export async function uploadProductImage(file: File) {
     const { data } = await api.post<ApiSuccess<{ url: string }>>(
       "/products/image",
       body,
-      {
-        headers: { "Content-Type": "multipart/form-data" },
-        transformRequest: (payload, headers) => {
-          if (
-            headers &&
-            typeof headers === "object" &&
-            "delete" in headers &&
-            typeof headers.delete === "function"
-          ) {
-            headers.delete("Content-Type")
-          }
-
-          return payload
-        },
-      }
+      multipartConfig()
     )
 
     return data.data.url
+  } catch (error) {
+    throw toApiError(error)
+  }
+}
+
+function multipartConfig() {
+  return {
+    headers: { "Content-Type": "multipart/form-data" },
+    transformRequest: (payload: unknown, headers: unknown) => {
+      if (
+        headers &&
+        typeof headers === "object" &&
+        "delete" in headers &&
+        typeof headers.delete === "function"
+      ) {
+        headers.delete("Content-Type")
+      }
+
+      return payload
+    },
+  }
+}
+
+export async function addProductImages(productId: string, files: File[]) {
+  const body = new FormData()
+
+  for (const file of files) {
+    body.append("images", file, file.name)
+  }
+
+  try {
+    const { data } = await api.post<ApiSuccess<Product>>(
+      `/products/${productId}/images`,
+      body,
+      multipartConfig()
+    )
+
+    return data.data
+  } catch (error) {
+    throw toApiError(error)
+  }
+}
+
+export async function removeProductImage(productId: string, imageId: string) {
+  try {
+    const { data } = await api.delete<ApiSuccess<Product>>(
+      `/products/${productId}/images/${imageId}`
+    )
+
+    return data.data
+  } catch (error) {
+    throw toApiError(error)
+  }
+}
+
+export async function setProductThumbnail(productId: string, imageId: string) {
+  try {
+    const { data } = await api.patch<ApiSuccess<Product>>(
+      `/products/${productId}/thumbnail`,
+      { imageId }
+    )
+
+    return data.data
   } catch (error) {
     throw toApiError(error)
   }
@@ -127,6 +176,8 @@ export type CreateVariantPayload = {
   discountValue?: number | null
   isDefault: boolean
   simple?: boolean
+  /** A product image id, or "" for no image. */
+  imageId?: string
   attributes?: {
     attributeId: string
     text?: string
