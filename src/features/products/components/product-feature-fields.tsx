@@ -1,4 +1,4 @@
-import { Plus, X } from "lucide-react"
+import { Plus, X } from "@/lib/icons"
 import { useFormState, useWatch, type Control } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"

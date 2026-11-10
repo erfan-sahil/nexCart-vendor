@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { ChevronRight, ChevronUp, LogOut, X } from "lucide-react"
+import { ChevronRight, ChevronUp, LogOut, X } from "@/lib/icons"
 import { NavLink, useLocation } from "react-router"
 
 import { isNavGroup, NAV, type NavPage } from "@/app/navigation"

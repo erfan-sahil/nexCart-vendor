@@ -3,8 +3,8 @@ import {
   ArrowUpRight,
   CalendarClock,
   Wallet,
-  type LucideIcon,
-} from "lucide-react"
+  type AppIcon,
+} from "@/lib/icons"
 
 import {
   Dialog,
@@ -176,7 +176,7 @@ function SummaryRow({
   detail,
   tone = "neutral",
 }: {
-  icon: LucideIcon
+  icon: AppIcon
   label: string
   value: string
   detail: string

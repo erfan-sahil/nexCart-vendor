@@ -1,4 +1,4 @@
-import { Minus, TrendingDown, TrendingUp, type LucideIcon } from "lucide-react"
+import { Minus, TrendingDown, TrendingUp, type AppIcon } from "@/lib/icons"
 
 import { CustomBadge } from "@/components/shared/custom-badge"
 import { cn } from "@/lib/utils"
@@ -26,7 +26,7 @@ type KpiCardProps = {
   value: string
   hint: string
   metric?: PeriodMetric
-  icon?: LucideIcon
+  icon?: AppIcon
   tone?: KpiTone
   className?: string
 }

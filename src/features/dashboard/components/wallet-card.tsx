@@ -1,4 +1,4 @@
-import { Landmark } from "lucide-react"
+import { Landmark } from "@/lib/icons"
 
 import { formatMoney } from "@/lib/format"
 

@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react"
-import { Loader2, Package } from "lucide-react"
+import { Loader2, Package } from "@/lib/icons"
 
 import { Button } from "@/components/ui/button"
 import {

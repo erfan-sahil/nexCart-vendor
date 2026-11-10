@@ -17,8 +17,8 @@ import {
   Star,
   Tag,
   TriangleAlert,
-  type LucideIcon,
-} from "lucide-react"
+  type AppIcon,
+} from "@/lib/icons"
 
 import { CustomBadge, type BadgeColor } from "@/components/shared"
 import { Button } from "@/components/ui/button"
@@ -65,7 +65,7 @@ const DETAIL_PAGE_SIZE = 20
 
 const STATUS_BADGE: Record<
   CatalogStatus,
-  { icon: LucideIcon; color: BadgeColor }
+  { icon: AppIcon; color: BadgeColor }
 > = {
   active: { icon: CircleCheck, color: "success" },
   archived: { icon: Archive, color: "neutral" },
@@ -73,7 +73,7 @@ const STATUS_BADGE: Record<
 
 const APPROVAL_BADGE: Record<
   ProductApprovalStatus,
-  { icon: LucideIcon; color: BadgeColor }
+  { icon: AppIcon; color: BadgeColor }
 > = {
   pending: { icon: Clock, color: "warning" },
   submitted: { icon: Send, color: "warning" },
@@ -397,7 +397,7 @@ function Metric({
   value,
   detail,
 }: {
-  icon: LucideIcon
+  icon: AppIcon
   tone: keyof typeof METRIC_TONE
   label: string
   value: string
@@ -432,7 +432,7 @@ function MixStat({
   label,
   value,
 }: {
-  icon: LucideIcon
+  icon: AppIcon
   tone: keyof typeof METRIC_TONE
   label: string
   value: string

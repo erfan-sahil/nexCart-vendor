@@ -4,8 +4,8 @@ import {
   ArrowRight,
   Clock,
   Wallet,
-  type LucideIcon,
-} from "lucide-react"
+  type AppIcon,
+} from "@/lib/icons"
 
 import { dashboardPanelClass } from "@/features/dashboard/lib/dashboard-surface"
 import { PanelSecondaryLink } from "@/features/dashboard/components/panel-secondary-link"
@@ -44,7 +44,7 @@ type GuideStep = {
   label: string
   amount: number
   description: string
-  icon: LucideIcon
+  icon: AppIcon
   tone: GuideTone
   action?: { to: string; label: string }
 }

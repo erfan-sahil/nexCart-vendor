@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { ChevronDown, Plus, Search, X } from "lucide-react"
+import { ChevronDown, Plus, Search, X } from "@/lib/icons"
 
 import { Button } from "@/components/ui/button"
 import {

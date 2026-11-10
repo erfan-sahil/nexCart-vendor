@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowDownToLine, ExternalLink, Loader2 } from "lucide-react"
+import { ArrowDownToLine, ExternalLink, Loader2 } from "@/lib/icons"
 import { Link } from "react-router"
 
 import { Button } from "@/components/ui/button"

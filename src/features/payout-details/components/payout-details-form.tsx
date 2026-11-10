@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Building2, Pencil, Smartphone, type LucideIcon } from "lucide-react"
+import { Building2, Pencil, Smartphone, type AppIcon } from "@/lib/icons"
 import { Controller, useForm, useWatch } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"
@@ -36,7 +36,7 @@ type MethodOption = {
   value: "bank" | "mobile"
   title: string
   description: string
-  icon: LucideIcon
+  icon: AppIcon
 }
 
 const METHOD_OPTIONS: MethodOption[] = [

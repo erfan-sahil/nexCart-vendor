@@ -1,4 +1,4 @@
-import { Building2, Smartphone, Wallet, type LucideIcon } from "lucide-react"
+import { Building2, Smartphone, Wallet, type AppIcon } from "@/lib/icons"
 
 import { CustomBadge } from "@/components/shared"
 import { Button } from "@/components/ui/button"
@@ -76,7 +76,7 @@ function maskAccountNumber(value: string | undefined) {
 }
 
 function payoutMeta(payout: StorePayout | null): {
-  icon: LucideIcon
+  icon: AppIcon
   methodLabel: string
   destination: string
   holder: string

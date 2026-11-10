@@ -15,21 +15,21 @@ import {
   Store,
   Undo2,
   Wallet,
-  type LucideIcon,
-} from "lucide-react"
+  type AppIcon,
+} from "@/lib/icons"
 
 type NavPageShape = {
   kind: "page"
   label: string
   path: string
   description: string
-  icon: LucideIcon
+  icon: AppIcon
 }
 
 type NavGroupShape = {
   kind: "group"
   label: string
-  icon: LucideIcon
+  icon: AppIcon
   children: readonly NavPageShape[]
 }
 

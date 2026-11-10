@@ -5,14 +5,14 @@ import {
   CircleX,
   Clock,
   Loader,
-  type LucideIcon,
-} from "lucide-react"
+  type AppIcon,
+} from "@/lib/icons"
 
 import { CustomBadge, type BadgeColor } from "@/components/shared"
 
 import { withdrawalStatusLabel } from "../constants"
 
-const STATUS_BADGE: Record<string, { color: BadgeColor; icon: LucideIcon }> = {
+const STATUS_BADGE: Record<string, { color: BadgeColor; icon: AppIcon }> = {
   pending: { color: "warning", icon: Clock },
   approved: { color: "info", icon: BadgeCheck },
   processing: { color: "violet", icon: Loader },

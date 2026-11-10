@@ -1,4 +1,4 @@
-import { MessageSquareReply } from "lucide-react"
+import { MessageSquareReply } from "@/lib/icons"
 
 import { CustomBadge } from "@/components/shared"
 import { Button } from "@/components/ui/button"

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { MessageSquare, Package, Store, type LucideIcon } from "lucide-react"
+import { MessageSquare, Package, Store, type AppIcon } from "@/lib/icons"
 
 import { CustomBadge } from "@/components/shared"
 import { cn } from "@/lib/utils"
@@ -130,7 +130,7 @@ function MetaRow({
   value,
   detail,
 }: {
-  icon: LucideIcon
+  icon: AppIcon
   label: string
   value: string
   detail?: string

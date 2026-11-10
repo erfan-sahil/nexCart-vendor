@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Loader2, MessageSquareReply } from "lucide-react"
+import { Loader2, MessageSquareReply } from "@/lib/icons"
 
 import { Button } from "@/components/ui/button"
 import {
