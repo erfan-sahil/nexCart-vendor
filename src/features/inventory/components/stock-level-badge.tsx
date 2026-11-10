@@ -1,14 +1,11 @@
-import { CircleCheck, CircleX, TriangleAlert } from "lucide-react"
+import { CircleCheck, CircleX, TriangleAlert, type AppIcon } from "@/lib/icons"
 
 import { CustomBadge, type BadgeColor } from "@/components/shared"
 
 import { STOCK_LEVEL_LABEL } from "../constants"
 import type { StockLevel } from "../types"
 
-const STOCK_BADGE: Record<
-  StockLevel,
-  { icon: typeof CircleCheck; color: BadgeColor }
-> = {
+const STOCK_BADGE: Record<StockLevel, { icon: AppIcon; color: BadgeColor }> = {
   in_stock: { icon: CircleCheck, color: "success" },
   low_stock: { icon: TriangleAlert, color: "warning" },
   out_of_stock: { icon: CircleX, color: "danger" },

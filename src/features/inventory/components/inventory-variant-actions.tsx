@@ -1,4 +1,4 @@
-import { Ellipsis, Eye, Pencil } from "lucide-react"
+import { Ellipsis, Eye, Pencil } from "@/lib/icons"
 
 import { Button } from "@/components/ui/button"
 import {

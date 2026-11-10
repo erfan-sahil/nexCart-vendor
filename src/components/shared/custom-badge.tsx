@@ -1,4 +1,4 @@
-import type { LucideIcon } from "lucide-react"
+import type { AppIcon } from "@/lib/icons"
 
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
@@ -23,7 +23,7 @@ export type BadgeColor = keyof typeof COLOR
 type CustomBadgeProps = {
   name: string
   color?: BadgeColor
-  icon?: LucideIcon
+  icon?: AppIcon
   title?: string
   className?: string
 }

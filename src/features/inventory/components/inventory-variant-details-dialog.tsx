@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { Archive, CircleCheck, Star, type LucideIcon } from "lucide-react"
+import { Archive, CircleCheck, Star, type AppIcon } from "@/lib/icons"
 
 import { CustomBadge, type BadgeColor } from "@/components/shared"
 import { Button } from "@/components/ui/button"
@@ -28,7 +28,7 @@ import { StockLevelBadge } from "./stock-level-badge"
 
 const STATUS_BADGE: Record<
   CatalogStatus,
-  { icon: LucideIcon; color: BadgeColor }
+  { icon: AppIcon; color: BadgeColor }
 > = {
   active: { icon: CircleCheck, color: "success" },
   archived: { icon: Archive, color: "neutral" },

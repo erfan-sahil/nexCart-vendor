@@ -1,4 +1,4 @@
-import { ArrowDownLeft, ArrowUpRight } from "lucide-react"
+import { ArrowDownLeft, ArrowUpRight } from "@/lib/icons"
 
 import { CustomBadge } from "@/components/shared"
 

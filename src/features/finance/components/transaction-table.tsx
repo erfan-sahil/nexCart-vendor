@@ -4,14 +4,7 @@ import {
   tableFeatures,
   useTable,
 } from "@tanstack/react-table"
-import {
-  Clock,
-  Ellipsis,
-  Eye,
-  Lock,
-  Wallet,
-  type LucideIcon,
-} from "lucide-react"
+import { Clock, Ellipsis, Eye, Lock, Wallet, type AppIcon } from "@/lib/icons"
 
 import { CustomBadge, type BadgeColor } from "@/components/shared"
 import { Button } from "@/components/ui/button"
@@ -217,7 +210,7 @@ export function TransactionTable({
   )
 }
 
-const ACCOUNT_BADGE: Record<string, { color: BadgeColor; icon: LucideIcon }> = {
+const ACCOUNT_BADGE: Record<string, { color: BadgeColor; icon: AppIcon }> = {
   pending: { color: "warning", icon: Clock },
   available: { color: "success", icon: Wallet },
   reserved: { color: "info", icon: Lock },

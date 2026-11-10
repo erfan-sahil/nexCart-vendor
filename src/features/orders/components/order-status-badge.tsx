@@ -9,8 +9,8 @@ import {
   Truck,
   Warehouse,
   XCircle,
-  type LucideIcon,
-} from "lucide-react"
+  type AppIcon,
+} from "@/lib/icons"
 
 import { CustomBadge, type BadgeColor } from "@/components/shared"
 
@@ -22,7 +22,7 @@ import type { VendorOrderStatus } from "../types"
 
 const STATUS_BADGE: Record<
   VendorOrderStatus,
-  { icon: LucideIcon; color: BadgeColor }
+  { icon: AppIcon; color: BadgeColor }
 > = {
   pending: { icon: Clock, color: "warning" },
   accepted: { icon: CircleDashed, color: "brand" },

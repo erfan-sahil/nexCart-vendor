@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Pencil } from "lucide-react"
+import { Pencil } from "@/lib/icons"
 import { Controller, useForm, useWatch } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"

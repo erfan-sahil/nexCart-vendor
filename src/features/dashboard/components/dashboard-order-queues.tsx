@@ -3,8 +3,8 @@ import {
   Package,
   PackageCheck,
   Timer,
-  type LucideIcon,
-} from "lucide-react"
+  type AppIcon,
+} from "@/lib/icons"
 
 import { cn } from "@/lib/utils"
 
@@ -33,7 +33,7 @@ export function DashboardOrderQueues({
     label: string
     value: number
     hint: string
-    icon: LucideIcon
+    icon: AppIcon
     tone: QueueTone
   }[] = [
     {

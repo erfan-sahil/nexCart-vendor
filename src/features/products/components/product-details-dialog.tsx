@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react"
-import { Archive, CircleCheck, Package, Star } from "lucide-react"
+import { Archive, CircleCheck, Package, Star } from "@/lib/icons"
 
 import { CustomBadge } from "@/components/shared"
 import { Button } from "@/components/ui/button"

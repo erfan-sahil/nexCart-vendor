@@ -7,7 +7,7 @@ import {
   MessageSquare,
   MessageSquareReply,
   Store,
-} from "lucide-react"
+} from "@/lib/icons"
 
 import { CustomBadge } from "@/components/shared"
 import { Button } from "@/components/ui/button"

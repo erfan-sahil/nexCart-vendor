@@ -5,7 +5,7 @@ import {
   Receipt,
   ShoppingBag,
   Wallet,
-} from "lucide-react"
+} from "@/lib/icons"
 
 import { KpiCard } from "@/components/shared/kpi-card"
 import { formatMoney } from "@/lib/format"

@@ -7,7 +7,7 @@ import {
   MoreHorizontal,
   Star,
   Trash2,
-} from "lucide-react"
+} from "@/lib/icons"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -262,7 +262,7 @@ function ManagedImage({
       <div className="absolute inset-x-1.5 top-1.5 flex items-start justify-between gap-1">
         {isThumbnail ? (
           <Badge className="shadow-sm">
-            <Star data-icon="inline-start" className="fill-current" />
+            <Star data-icon="inline-start" weight="bold" />
             Thumbnail
           </Badge>
         ) : (

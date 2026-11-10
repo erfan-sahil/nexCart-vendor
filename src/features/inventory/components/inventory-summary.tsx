@@ -4,8 +4,8 @@ import {
   PackageX,
   TriangleAlert,
   Warehouse,
-  type LucideIcon,
-} from "lucide-react"
+  type AppIcon,
+} from "@/lib/icons"
 
 import { Button } from "@/components/ui/button"
 import { ApiError } from "@/lib/api/errors"
@@ -123,7 +123,7 @@ function SummaryCard({
   value,
   detail,
 }: {
-  icon: LucideIcon
+  icon: AppIcon
   tone: Tone
   label: string
   value: string
@@ -161,7 +161,7 @@ function StatCopy({
   )
 }
 
-function StatIcon({ icon: Icon, tone }: { icon: LucideIcon; tone: Tone }) {
+function StatIcon({ icon: Icon, tone }: { icon: AppIcon; tone: Tone }) {
   return (
     <span
       className={cn(

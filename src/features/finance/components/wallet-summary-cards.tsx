@@ -3,8 +3,8 @@ import {
   Clock,
   Landmark,
   Wallet,
-  type LucideIcon,
-} from "lucide-react"
+  type AppIcon,
+} from "@/lib/icons"
 
 import { cn } from "@/lib/utils"
 
@@ -30,7 +30,7 @@ export function WalletSummaryCards({ balances }: WalletSummaryCardsProps) {
   const totalBalance = balances.pendingSettlement + balances.availableBalance
 
   const cards: {
-    icon: LucideIcon
+    icon: AppIcon
     tone: Tone
     label: string
     value: string
@@ -82,7 +82,7 @@ function SummaryCard({
   value,
   detail,
 }: {
-  icon: LucideIcon
+  icon: AppIcon
   tone: Tone
   label: string
   value: string

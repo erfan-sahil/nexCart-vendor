@@ -4,7 +4,7 @@ import {
   tableFeatures,
   useTable,
 } from "@tanstack/react-table"
-import { Ellipsis, Eye, Package, Pencil, Trash2 } from "lucide-react"
+import { Ellipsis, Eye, Package, Pencil, Trash2 } from "@/lib/icons"
 
 import { Button } from "@/components/ui/button"
 import {

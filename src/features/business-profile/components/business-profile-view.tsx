@@ -10,7 +10,7 @@ import {
   MessageSquare,
   ShieldAlert,
   ShieldQuestion,
-} from "lucide-react"
+} from "@/lib/icons"
 import { useForm, useWatch } from "react-hook-form"
 
 import { CustomBadge } from "@/components/shared"

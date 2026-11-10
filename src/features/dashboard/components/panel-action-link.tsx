@@ -1,4 +1,4 @@
-import { ChevronRight } from "lucide-react"
+import { ChevronRight } from "@/lib/icons"
 import type { ReactNode } from "react"
 import { Link } from "react-router"
 

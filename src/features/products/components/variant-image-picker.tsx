@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react"
-import { Check, ImageOff } from "lucide-react"
+import { Check, ImageOff } from "@/lib/icons"
 
 import { FieldDescription, FieldLegend, FieldSet } from "@/components/ui/field"
 import { cn } from "@/lib/utils"

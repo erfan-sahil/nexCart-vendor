@@ -1,4 +1,4 @@
-import { Banknote, Receipt, ShoppingBag, Wallet } from "lucide-react"
+import { Banknote, Receipt, ShoppingBag, Wallet } from "@/lib/icons"
 
 import { KpiCard } from "@/components/shared/kpi-card"
 import { formatMoney } from "@/lib/format"

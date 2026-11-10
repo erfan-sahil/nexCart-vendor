@@ -7,10 +7,10 @@ import {
   Eye,
   EyeOff,
   Send,
-  Star,
+  StarShine,
   Tag,
-  type LucideIcon,
-} from "lucide-react"
+  type AppIcon,
+} from "@/lib/icons"
 
 import { CustomBadge, type BadgeColor } from "@/components/shared"
 
@@ -19,7 +19,7 @@ import type { Product, ProductApprovalStatus, ProductStatus } from "../types"
 
 const STATUS_BADGE: Record<
   ProductStatus,
-  { icon: LucideIcon; color: BadgeColor }
+  { icon: AppIcon; color: BadgeColor }
 > = {
   active: { icon: CircleCheck, color: "success" },
   archived: { icon: Archive, color: "neutral" },
@@ -27,7 +27,7 @@ const STATUS_BADGE: Record<
 
 const APPROVAL_BADGE: Record<
   ProductApprovalStatus,
-  { icon: LucideIcon; color: BadgeColor }
+  { icon: AppIcon; color: BadgeColor }
 > = {
   pending: { icon: Clock, color: "warning" },
   submitted: { icon: Send, color: "warning" },
@@ -58,7 +58,7 @@ export function ProductStatusBadges({ product }: { product: Product }) {
         icon={product.isPublished ? Eye : EyeOff}
       />
       {product.isFeatured ? (
-        <CustomBadge name="Featured" color="brand" icon={Star} />
+        <CustomBadge name="Featured" color="brand" icon={StarShine} />
       ) : null}
     </div>
   )
